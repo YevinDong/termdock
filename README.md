@@ -42,7 +42,7 @@ Copy and paste: use **⌘C / ⌘V** on macOS, or **Ctrl+Shift+C / Ctrl+Shift+V**
 **终端，就在手边。**  
 为 VS Code 辅助侧边栏打造的轻巧独立终端。
 
-[English](README.md#readme-en) · **简体中文**
+[English ↑](#readme-en) · **简体中文**
 
 让代码、底部终端面板和另一组 Shell 同时保持可见。在简洁的小空间里，使用真正的终端。
 

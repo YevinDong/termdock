@@ -1,11 +1,12 @@
 # Changelog
 
-## Unreleased — Security hardening
+## 0.2.2 — Security hardening and identity
 
 - Paste now asks for confirmation when the clipboard contains control characters (such as Ctrl+O or ESC), not only line breaks.
 - The Windows default shell resolves to the absolute System32 PowerShell path.
 - Links in terminal output (OSC 8) open only for http/https URLs, after confirmation, via VS Code.
-- Publisher is unified as `yevin`; the extension ID is now `yevin.independent-sidebar-terminal`.
+- Extension ID is now `yevin.termlet` (publisher `yevin`, name `termlet`). Uninstall earlier builds (`dot-local.independent-sidebar-terminal`) before installing; `sidebarTerminal.*` settings and commands are unchanged.
+- Fixed VSIX packaging: the README's language links are in-page anchors again, so vsce no longer needs a repository URL.
 - Test build output is excluded from the VSIX.
 
 ## 0.2.1 — Introduction and identity
