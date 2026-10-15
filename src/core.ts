@@ -10,7 +10,8 @@ export function resolveCwd(configured: string, workspace: string | undefined, ho
   return path.isAbsolute(expanded) ? expanded : path.resolve(workspace || home, expanded);
 }
 export function shellConfig(platform: string, shell: string, args: string[] | null, env: NodeJS.ProcessEnv) {
-  const executable = shell || (platform === 'win32' ? 'powershell.exe' : env.SHELL || '/bin/sh');
+  // Resolve the Windows default absolutely so a same-named file elsewhere on the search path cannot be launched.
+  const executable = shell || (platform === 'win32' ? path.win32.join(env.SystemRoot || env.windir || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe') : env.SHELL || '/bin/sh');
   return { executable, args: args ?? (platform === 'darwin' ? ['-l'] : []) };
 }
 export function shellEnvironment(env: NodeJS.ProcessEnv): Record<string, string> {
@@ -23,4 +24,15 @@ export function shellEnvironment(env: NodeJS.ProcessEnv): Record<string, string>
   result.TERM_PROGRAM = 'termlet';
   result.TERM_PROGRAM_VERSION = '0.2.1';
   return result;
+}
+/** Line breaks or other control characters (e.g. Ctrl+O, ESC) in pasted text can run commands or leave bracketed paste. */
+export function pasteRisk(text: string): 'multiline' | 'control' | undefined {
+  if (/[\r\n]/.test(text)) return 'multiline';
+  if (/[\x00-\x08\x0b-\x1f\x7f-\x9f]/.test(text)) return 'control';
+  return undefined;
+}
+/** Only web links from terminal output (OSC 8) may be opened. */
+export function isWebLink(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length > 8192) return false;
+  try { const url = new URL(value); return url.protocol === 'http:' || url.protocol === 'https:'; } catch { return false; }
 }

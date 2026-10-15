@@ -5,7 +5,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { accessSync, constants, statSync, chmodSync } from 'node:fs';
 import type * as Pty from 'node-pty';
 import { Session } from './session';
-import { dimension, resolveCwd, shellConfig, shellEnvironment } from './core';
+import { dimension, isWebLink, pasteRisk, resolveCwd, shellConfig, shellEnvironment } from './core';
 
 class Termlet implements vscode.WebviewViewProvider, vscode.Disposable {
   private view?: vscode.WebviewView;
@@ -101,8 +101,9 @@ class Termlet implements vscode.WebviewViewProvider, vscode.Disposable {
     if (!s || !s.running || !vscode.workspace.isTrusted) return;
     const text = await vscode.env.clipboard.readText();
     if (text.length > 1024 * 1024) throw new Error('Clipboard text is too large (maximum 1 MB).');
-    if (/[\r\n]/.test(text)) {
-      const answer = await vscode.window.showWarningMessage('Paste multiple lines into the terminal? Pasted text can execute commands.', {modal:true}, 'Paste');
+    const risk = pasteRisk(text);
+    if (risk) {
+      const answer = await vscode.window.showWarningMessage(risk === 'multiline' ? 'Paste multiple lines into the terminal? Pasted text can execute commands.' : 'Paste text containing control characters into the terminal? Pasted text can execute commands.', {modal:true}, 'Paste');
       if (answer !== 'Paste') return;
     }
     // The user may close or replace the target while a clipboard read/confirmation is pending.
@@ -155,7 +156,12 @@ class Termlet implements vscode.WebviewViewProvider, vscode.Disposable {
       case 'paste': if(s) await this.paste(s.id); break;
       case 'trust': await vscode.commands.executeCommand('workbench.trust.manage'); break;
       case 'settings': await this.settingsCommand(); break;
+      case 'link': if (isWebLink(m.uri)) await this.openLink(m.uri); break;
     }
+  }
+  private async openLink(uri: string) {
+    const answer = await vscode.window.showWarningMessage(`Open this link from terminal output?\n${uri}`, {modal:true}, 'Open');
+    if (answer === 'Open') await vscode.env.openExternal(vscode.Uri.parse(uri, true));
   }
   error(error: unknown) { const message = error instanceof Error ? error.message : String(error); this.send({type:'error',message}); void vscode.window.showErrorMessage(`Termlet: ${message}`); }
   private html(webview: vscode.Webview) {

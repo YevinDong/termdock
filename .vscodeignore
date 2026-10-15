@@ -4,6 +4,7 @@ src/**
 webview/**
 scripts/**
 test/**
+.test-build/**
 package-lock.json
 tsconfig.json
 .npmrc

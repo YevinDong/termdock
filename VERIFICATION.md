@@ -30,7 +30,7 @@ The original double-paste path is reproduced by source-level tests simulating VS
 
 - Direct VSIX distribution; no Marketplace publication or user-computer installation performed.
 - Author is yevin and the extension icon is an original 256px PNG, with SVG source included.
-- Display name is Termlet. Extension ID remains `dot-local.independent-sidebar-terminal`, version advances from 0.2.0 to 0.2.1, and `sidebarTerminal.*` IDs remain stable for upgrade compatibility.
+- Display name is Termlet. Extension ID is `yevin.independent-sidebar-terminal`, version advances from 0.2.0 to 0.2.1, and `sidebarTerminal.*` IDs remain stable for upgrade compatibility.
 - Requires VS Code >=1.106.0 and a Node.js extension host.
 - Bundled native targets: macOS ARM64/x64, glibc Linux ARM64/x64, Windows ARM64/x64.
 - Linux requires glibc 2.28+; Alpine/musl is unsupported.

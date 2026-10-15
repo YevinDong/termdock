@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Security hardening
+
+- Paste now asks for confirmation when the clipboard contains control characters (such as Ctrl+O or ESC), not only line breaks.
+- The Windows default shell resolves to the absolute System32 PowerShell path.
+- Links in terminal output (OSC 8) open only for http/https URLs, after confirmation, via VS Code.
+- Publisher is unified as `yevin`; the extension ID is now `yevin.independent-sidebar-terminal`.
+- Test build output is excluded from the VSIX.
+
 ## 0.2.1 — Introduction and identity
 
 - Added an original terminal icon, with a packaged PNG and editable SVG.

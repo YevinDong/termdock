@@ -32,7 +32,7 @@ function copy() { const tab=active?tabs.get(active):undefined; if(tab?.term.hasS
 function paste() { if(active) post({type:'paste',id:active}); }
 function create(info:Info) {
   const element=document.createElement('div'); element.className='terminal-pane'; element.hidden=true; el('terminals').appendChild(element);
-  const term=new Terminal({...settings,theme:theme(),allowProposedApi:false,convertEol:false,macOptionIsMeta:true,scrollOnUserInput:true});
+  const term=new Terminal({...settings,theme:theme(),allowProposedApi:false,convertEol:false,macOptionIsMeta:true,scrollOnUserInput:true,linkHandler:{allowNonHttpProtocols:false,activate:(_event,uri)=>post({type:'link',uri})}});
   const fitter=new FitAddon(); term.loadAddon(fitter); term.open(element);
   const tab:Tab={term,fit:fitter,element,seq:0,initialized:false,info}; tabs.set(info.id,tab);
   term.onData(data=>{if(tab.info.running) post({type:'input',id:info.id,data});});
