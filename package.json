@@ -1,0 +1,238 @@
+{
+  "name": "independent-sidebar-terminal",
+  "displayName": "Termlet",
+  "description": "A compact, independent shell terminal with native controls in the Secondary Side Bar.",
+  "version": "0.2.1",
+  "publisher": "yevin",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.106.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "terminal",
+    "pty",
+    "remote",
+    "xterm",
+    "termlet"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onView:sidebarTerminal.terminal"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "The view is available, but shell processes can only start in trusted workspaces.",
+      "restrictedConfigurations": [
+        "sidebarTerminal.shell",
+        "sidebarTerminal.shellArgs",
+        "sidebarTerminal.cwd"
+      ]
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "A real filesystem and shell are required."
+    }
+  },
+  "contributes": {
+    "viewsContainers": {
+      "secondarySidebar": [
+        {
+          "id": "sidebarTerminal",
+          "title": "Termlet",
+          "icon": "media/terminal.svg"
+        }
+      ]
+    },
+    "views": {
+      "sidebarTerminal": [
+        {
+          "type": "webview",
+          "id": "sidebarTerminal.terminal",
+          "name": "Termlet",
+          "icon": "media/terminal.svg",
+          "contextualTitle": "Termlet"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "sidebarTerminal.focus",
+        "title": "Termlet: Focus"
+      },
+      {
+        "command": "sidebarTerminal.new",
+        "title": "Termlet: New Terminal",
+        "icon": "$(add)",
+        "enablement": "isWorkspaceTrusted && sidebarTerminal.canCreate"
+      },
+      {
+        "command": "sidebarTerminal.clear",
+        "title": "Termlet: Clear Display",
+        "icon": "$(clear-all)",
+        "enablement": "sidebarTerminal.hasSessions"
+      },
+      {
+        "command": "sidebarTerminal.restart",
+        "title": "Termlet: Restart Terminal",
+        "icon": "$(refresh)",
+        "enablement": "sidebarTerminal.hasSessions"
+      },
+      {
+        "command": "sidebarTerminal.kill",
+        "title": "Termlet: Close Terminal",
+        "icon": "$(trash)",
+        "enablement": "sidebarTerminal.hasSessions"
+      },
+      {
+        "command": "sidebarTerminal.switch",
+        "title": "Termlet: Switch Terminal",
+        "icon": "$(list-selection)",
+        "enablement": "sidebarTerminal.hasSessions"
+      },
+      {
+        "command": "sidebarTerminal.copy",
+        "title": "Termlet: Copy Selection",
+        "enablement": "sidebarTerminal.hasSessions"
+      },
+      {
+        "command": "sidebarTerminal.paste",
+        "title": "Termlet: Paste",
+        "enablement": "sidebarTerminal.activeRunning"
+      },
+      {
+        "command": "sidebarTerminal.settings",
+        "title": "Termlet: Settings"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "sidebarTerminal.switch",
+          "when": "view == sidebarTerminal.terminal",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sidebarTerminal.new",
+          "when": "view == sidebarTerminal.terminal",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sidebarTerminal.kill",
+          "when": "view == sidebarTerminal.terminal",
+          "group": "navigation@3"
+        },
+        {
+          "command": "sidebarTerminal.clear",
+          "when": "view == sidebarTerminal.terminal",
+          "group": "1_terminal@1"
+        },
+        {
+          "command": "sidebarTerminal.restart",
+          "when": "view == sidebarTerminal.terminal",
+          "group": "1_terminal@2"
+        },
+        {
+          "command": "sidebarTerminal.copy",
+          "when": "view == sidebarTerminal.terminal",
+          "group": "2_clipboard@1"
+        },
+        {
+          "command": "sidebarTerminal.paste",
+          "when": "view == sidebarTerminal.terminal",
+          "group": "2_clipboard@2"
+        },
+        {
+          "command": "sidebarTerminal.settings",
+          "when": "view == sidebarTerminal.terminal",
+          "group": "3_settings@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Termlet",
+      "properties": {
+        "sidebarTerminal.shell": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "description": "Shell executable. Empty uses $SHELL on macOS/Linux, or PowerShell on Windows. In Remote SSH this is a path on the remote host."
+        },
+        "sidebarTerminal.shellArgs": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "default": null,
+          "scope": "machine-overridable",
+          "description": "Shell arguments. Null uses -l on macOS and no arguments elsewhere. An empty array disables default arguments."
+        },
+        "sidebarTerminal.cwd": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "description": "Starting directory. Empty uses the active workspace folder, then the first folder, then your home directory. Supports ${workspaceFolder} and ${userHome}."
+        },
+        "sidebarTerminal.fontFamily": {
+          "type": "string",
+          "default": "",
+          "description": "Terminal font. Empty inherits the integrated terminal/editor font."
+        },
+        "sidebarTerminal.fontSize": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 72,
+          "description": "Font size. 0 inherits the integrated terminal font size."
+        },
+        "sidebarTerminal.scrollback": {
+          "type": "integer",
+          "default": 2000,
+          "minimum": 100,
+          "maximum": 10000,
+          "description": "Scrollback lines per terminal. Changes apply to new terminals."
+        },
+        "sidebarTerminal.cursorBlink": {
+          "type": "boolean",
+          "default": true,
+          "description": "Blink the terminal cursor."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.cjs",
+    "test:ui": "node test/ui.cjs",
+    "check": "npm run typecheck && npm run build && npm test && npm run test:ui",
+    "vscode:prepublish": "npm run build",
+    "package": "vsce package --no-dependencies --allow-missing-repository --skip-license --out termlet-0.2.1.vsix"
+  },
+  "dependencies": {
+    "@xterm/xterm": "5.5.0",
+    "@xterm/addon-fit": "0.10.0",
+    "@xterm/addon-serialize": "0.13.0",
+    "@xterm/headless": "5.5.0",
+    "node-pty": "1.2.0-beta.15"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.106.0",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.25.0",
+    "playwright-core": "^1.55.0",
+    "typescript": "^5.9.0"
+  },
+  "author": "yevin",
+  "icon": "media/icon.png"
+}

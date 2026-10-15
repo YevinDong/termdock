@@ -1,0 +1,17 @@
+node_modules/**
+.npm-cache/**
+src/**
+webview/**
+scripts/**
+test/**
+package-lock.json
+tsconfig.json
+.npmrc
+.gitignore
+*.tgz
+*.vsix
+*.zip
+VERIFICATION.md
+SHA256SUMS.txt
+dist/core.js
+dist/session.js

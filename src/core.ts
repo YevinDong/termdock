@@ -1,0 +1,26 @@
+import * as path from 'node:path';
+export function dimension(value: unknown, fallback: number, max: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(2, Math.min(max, Math.floor(value))) : fallback;
+}
+export function resolveCwd(configured: string, workspace: string | undefined, home: string): string {
+  const expanded = configured.replaceAll('${workspaceFolder}', workspace || home).replaceAll('${userHome}', home);
+  if (!expanded) return workspace || home;
+  if (expanded === '~') return home;
+  if (expanded.startsWith('~/')) return path.join(home, expanded.slice(2));
+  return path.isAbsolute(expanded) ? expanded : path.resolve(workspace || home, expanded);
+}
+export function shellConfig(platform: string, shell: string, args: string[] | null, env: NodeJS.ProcessEnv) {
+  const executable = shell || (platform === 'win32' ? 'powershell.exe' : env.SHELL || '/bin/sh');
+  return { executable, args: args ?? (platform === 'darwin' ? ['-l'] : []) };
+}
+export function shellEnvironment(env: NodeJS.ProcessEnv): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(env)) {
+    if (value !== undefined && (!key.startsWith('VSCODE_') || ['VSCODE_IPC_HOOK_CLI', 'VSCODE_CLI_REQUIRE_TOKEN'].includes(key)) && key !== 'ELECTRON_RUN_AS_NODE' && key !== 'NODE_OPTIONS' && key !== 'NODE_REPL_EXTERNAL_MODULE') result[key] = value;
+  }
+  result.TERM = 'xterm-256color';
+  result.COLORTERM = 'truecolor';
+  result.TERM_PROGRAM = 'termlet';
+  result.TERM_PROGRAM_VERSION = '0.2.1';
+  return result;
+}

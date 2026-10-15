@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>Termlet</title>
+  <desc>A mint shell prompt and light cursor on a rounded deep-teal terminal tile.</desc>
+  <defs>
+    <linearGradient id="tile" x1="24" y1="16" x2="232" y2="248" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#183A43"/>
+      <stop offset="1" stop-color="#0B1C24"/>
+    </linearGradient>
+    <linearGradient id="prompt" x1="68" y1="84" x2="120" y2="168" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A7F3D8"/>
+      <stop offset="1" stop-color="#5FD5B5"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="54" fill="url(#tile)"/>
+  <rect x="9" y="9" width="238" height="238" rx="53" fill="none" stroke="#557E83" stroke-opacity=".35" stroke-width="2"/>
+  <path d="m72 88 44 40-44 40" fill="none" stroke="url(#prompt)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M145 168h42" fill="none" stroke="#EDF8F5" stroke-width="18" stroke-linecap="round"/>
+</svg>
