@@ -22,9 +22,7 @@ inkscape media/icon.svg --export-type=png --export-filename=media/icon.png --exp
 
 ## Documentation
 
-`README.md` is the default extension introduction, with English first and an in-page link to Chinese. `README.zh-CN.md` is the standalone Chinese edition. Keep `README.md` language links as in-page `#` anchors: vsce rejects file-relative links there when no repository URL is set.
-
-VS Code's installed Extension Details does not open relative Markdown-file links. Its supported in-page anchors provide the offline language navigation; no external documentation host or invented repository URL is used. The two languages are visible sections of the same Details page, not a dynamically hidden language toggle. In source viewers, the standalone Chinese README links back to the English README. VSIX packaging normalizes the main filename to `readme.md`; the source backlink is not used by Extension Details.
+`README.md` is the English extension introduction and the default README. `README.zh-CN.md` is the Chinese edition. Each links to the other with a relative file link. `package.json` sets `repository`, so vsce rewrites those links to GitHub URLs when packaging; without `repository`, `vsce package` fails on relative links.
 
 ## Settings reference
 

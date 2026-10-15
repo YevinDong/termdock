@@ -6,7 +6,8 @@
 - The Windows default shell resolves to the absolute System32 PowerShell path.
 - Links in terminal output (OSC 8) open only for http/https URLs, after confirmation, via VS Code.
 - Extension ID is now `yevin.termlet` (publisher `yevin`, name `termlet`). Uninstall earlier builds (`dot-local.independent-sidebar-terminal`) before installing; `sidebarTerminal.*` settings and commands are unchanged.
-- Fixed VSIX packaging: the README's language links are in-page anchors again, so vsce no longer needs a repository URL.
+- Split the introduction into an English `README.md` (default) and a Chinese `README.zh-CN.md` that link to each other.
+- Fixed VSIX packaging: `package.json` now declares the GitHub repository, so vsce can rewrite the README's relative links.
 - Test build output is excluded from the VSIX.
 
 ## 0.2.1 — Introduction and identity

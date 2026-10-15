@@ -216,7 +216,7 @@
     "test:ui": "node test/ui.cjs",
     "check": "npm run typecheck && npm run build && npm test && npm run test:ui",
     "vscode:prepublish": "npm run build",
-    "package": "vsce package --no-dependencies --allow-missing-repository --skip-license --out termlet-0.2.2.vsix"
+    "package": "vsce package --no-dependencies --skip-license --out termlet-0.2.2.vsix"
   },
   "dependencies": {
     "@xterm/xterm": "5.5.0",
@@ -234,5 +234,9 @@
     "typescript": "^5.9.0"
   },
   "author": "yevin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YevinDong/termlet.git"
+  },
   "icon": "media/icon.png"
 }

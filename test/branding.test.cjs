@@ -19,25 +19,29 @@ test('Termlet author, publisher and original 256px icon are present', () => {
   assert.match(fs.readFileSync('LICENSE', 'utf8'), /Copyright \(c\) 2026 yevin/);
 });
 
-test('default README has working offline language anchors and no external or relative-file links', () => {
+const mdLinks = text => [...text.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)].map(m => m[1]);
+
+test('English README is the default and links to the Chinese README', () => {
   const readme = fs.readFileSync('README.md', 'utf8');
-  const anchors = [...readme.matchAll(/<a id="([^"]+)"><\/a>/g)].map(m => m[1]);
-  assert.deepEqual(anchors, ['readme-en', 'readme-zh-cn']);
-  const links = [...readme.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)].map(m => m[1]);
-  // vsce rewrites file-relative links and fails without a repository URL; keep in-page anchors only.
-  assert.deepEqual(links, ['#readme-zh-cn', '#readme-en']);
-  for (const link of links) assert.ok(anchors.includes(link.slice(1)));
-  assert.ok(readme.indexOf('## What you get') < readme.indexOf('## 核心功能'));
-  assert.doesNotMatch(readme, /dot-local/);
-  assert.equal(p.repository, undefined, 'do not invent a repository URL');
+  // vsce rewrites relative links against the repository; without it, packaging fails.
+  assert.equal(p.repository.url, 'https://github.com/YevinDong/termlet.git');
+  assert.deepEqual(mdLinks(readme), ['README.zh-CN.md']);
+  assert.doesNotMatch(readme, /<a id=|#readme-/, 'no in-page language anchors');
+  assert.doesNotMatch(readme.replace('[简体中文](README.zh-CN.md)', ''), /[\u4e00-\u9fff]/, 'English only');
+  assert.ok(readme.startsWith('# Termlet\n'));
+  assert.match(readme, /The macOS\/Windows VS Code UI and complete remote workflows have not yet been tested/);
 });
 
-test('standalone Chinese README matches the installed Chinese section and links to the English source', () => {
-  const main = fs.readFileSync('README.md', 'utf8');
-  const standalone = fs.readFileSync('README.zh-CN.md', 'utf8');
-  const expected = main.split('<a id="readme-zh-cn"></a>\n')[1].trim()
-    .replace('[English ↑](#readme-en)', '[English](README.md#readme-en)');
-  assert.equal(standalone.trim(), expected);
-  assert.match(main, /The macOS\/Windows VS Code UI and complete remote workflows have not yet been tested/);
-  assert.match(standalone, /尚未实测 macOS\/Windows/);
+test('Chinese README is standalone and links back to the English README', () => {
+  const readme = fs.readFileSync('README.zh-CN.md', 'utf8');
+  assert.deepEqual(mdLinks(readme), ['README.md']);
+  assert.doesNotMatch(readme, /<a id=|#readme-/);
+  assert.ok(readme.startsWith('# Termlet · 简体中文\n'));
+  assert.match(readme, /尚未实测 macOS\/Windows/);
+});
+
+test('both READMEs exist for every link target', () => {
+  for (const file of ['README.md', 'README.zh-CN.md']) {
+    for (const link of mdLinks(fs.readFileSync(file, 'utf8'))) assert.ok(fs.existsSync(link), `${file} -> ${link}`);
+  }
 });
