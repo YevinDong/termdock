@@ -7,7 +7,7 @@ import type * as Pty from 'node-pty';
 import { Session } from './session';
 import { dimension, isWebLink, pasteRisk, resolveCwd, shellConfig, shellEnvironment } from './core';
 
-class Termlet implements vscode.WebviewViewProvider, vscode.Disposable {
+class Termdock implements vscode.WebviewViewProvider, vscode.Disposable {
   private view?: vscode.WebviewView;
   private sessions = new Map<string, Session>();
   private active?: string;
@@ -20,30 +20,30 @@ class Termlet implements vscode.WebviewViewProvider, vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
   constructor(private context: vscode.ExtensionContext) {
     this.disposables.push(vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('sidebarTerminal') || e.affectsConfiguration('terminal.integrated') || e.affectsConfiguration('editor.fontFamily')) this.send({type:'settings', settings:this.settings()});
+      if (e.affectsConfiguration('termdock') || e.affectsConfiguration('terminal.integrated') || e.affectsConfiguration('editor.fontFamily')) this.send({type:'settings', settings:this.settings()});
     }), vscode.workspace.onDidGrantWorkspaceTrust(() => this.state()));
     this.state();
   }
   resolveWebviewView(view: vscode.WebviewView) {
-    this.view = view; this.ready = false; view.title = 'Termlet'; this.state();
+    this.view = view; this.ready = false; view.title = 'Termdock'; this.state();
     view.webview.options = { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'dist'), vscode.Uri.joinPath(this.context.extensionUri, 'media')] };
     view.webview.html = this.html(view.webview);
     view.webview.onDidReceiveMessage((message: unknown) => { void this.onMessage(message).catch(e => this.error(e)); }, undefined, this.context.subscriptions);
     view.onDidDispose(() => { if (this.view === view) { this.view = undefined; this.ready = false; for (const s of this.sessions.values()) s.setConnected(false); } }, undefined, this.context.subscriptions);
     view.onDidChangeVisibility(() => { for(const s of this.sessions.values()) s.setConnected(view.visible && this.ready); if (view.visible && this.ready) {this.state();for(const s of this.sessions.values()) s.snapshot();this.send({type:'visible'});} }, undefined, this.context.subscriptions);
   }
-  async focus() { await vscode.commands.executeCommand('sidebarTerminal.terminal.focus'); this.view?.show(false); this.send({type:'focus'}); }
+  async focus() { await vscode.commands.executeCommand('termdock.terminal.focus'); this.view?.show(false); this.send({type:'focus'}); }
   private send(message: unknown) { if (this.ready && this.view) void this.view.webview.postMessage(message); }
   private state() {
     const current = this.active ? this.sessions.get(this.active) : undefined;
     if (this.view) this.view.description = current ? `${current.name}${current.running ? '' : ` · exited (${current.exitCode ?? 0})`}` : undefined;
-    void vscode.commands.executeCommand('setContext', 'sidebarTerminal.hasSessions', this.sessions.size > 0);
-    void vscode.commands.executeCommand('setContext', 'sidebarTerminal.activeRunning', !!current?.running && vscode.workspace.isTrusted);
-    void vscode.commands.executeCommand('setContext', 'sidebarTerminal.canCreate', this.sessions.size < 8);
+    void vscode.commands.executeCommand('setContext', 'termdock.hasSessions', this.sessions.size > 0);
+    void vscode.commands.executeCommand('setContext', 'termdock.activeRunning', !!current?.running && vscode.workspace.isTrusted);
+    void vscode.commands.executeCommand('setContext', 'termdock.canCreate', this.sessions.size < 8);
     this.send({type:'state', sessions:[...this.sessions.values()].map(s=>s.info()), active:this.active, trusted:vscode.workspace.isTrusted, host:vscode.env.remoteName || 'local', settings:this.settings()});
   }
   private settings() {
-    const c = vscode.workspace.getConfiguration('sidebarTerminal');
+    const c = vscode.workspace.getConfiguration('termdock');
     const t = vscode.workspace.getConfiguration('terminal.integrated');
     return {
       fontFamily: c.get<string>('fontFamily') || t.get<string>('fontFamily') || vscode.workspace.getConfiguration('editor').get<string>('fontFamily') || 'monospace',
@@ -70,9 +70,9 @@ class Termlet implements vscode.WebviewViewProvider, vscode.Disposable {
     if (this.starting) return;
     this.starting = true;
     try {
-      if (!vscode.workspace.isTrusted) { this.state(); void vscode.window.showWarningMessage('Trust this workspace before starting a terminal in Termlet.'); return; }
+      if (!vscode.workspace.isTrusted) { this.state(); void vscode.window.showWarningMessage('Trust this workspace before starting a terminal in Termdock.'); return; }
       if (this.sessions.size >= 8) throw new Error('Close a terminal first. Up to 8 terminals can be open.');
-      const c = vscode.workspace.getConfiguration('sidebarTerminal');
+      const c = vscode.workspace.getConfiguration('termdock');
       const folder = vscode.window.activeTextEditor && vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor.document.uri) || vscode.workspace.workspaceFolders?.[0];
       const cwd = resolveCwd(c.get<string>('cwd', ''), folder?.uri.fsPath, os.homedir());
       if (!statSync(cwd).isDirectory()) throw new Error(`Starting directory is not a folder: ${cwd}`);
@@ -91,7 +91,7 @@ class Termlet implements vscode.WebviewViewProvider, vscode.Disposable {
       label: s.name, description: [s.id === this.active ? 'Active' : '', s.running ? '' : `Exited (${s.exitCode ?? 0})`].filter(Boolean).join(' · '),
       detail: `${vscode.env.remoteName ? `Remote · ${vscode.env.remoteName} · ` : ''}${s.cwd}`, id: s.id
     }));
-    const selected = await vscode.window.showQuickPick(items, { title: 'Termlet: Switch Terminal', placeHolder: 'Choose a terminal', matchOnDescription: true, matchOnDetail: true });
+    const selected = await vscode.window.showQuickPick(items, { title: 'Termdock: Switch Terminal', placeHolder: 'Choose a terminal', matchOnDescription: true, matchOnDetail: true });
     if (!selected || !this.sessions.has(selected.id)) return;
     this.active = selected.id; this.state(); await this.focus();
   }
@@ -111,7 +111,7 @@ class Termlet implements vscode.WebviewViewProvider, vscode.Disposable {
     this.send({type:'paste', id:s.id, text});
   }
   async pasteFromCommand() { await this.focus(); await this.paste(); }
-  settingsCommand() { return vscode.commands.executeCommand('workbench.action.openSettings', 'sidebarTerminal'); }
+  settingsCommand() { return vscode.commands.executeCommand('workbench.action.openSettings', 'termdock'); }
   async close(id = this.active, confirm = true) {
     const s = id && this.sessions.get(id); if (!s) return;
     if (confirm && s.running) {
@@ -163,19 +163,19 @@ class Termlet implements vscode.WebviewViewProvider, vscode.Disposable {
     const answer = await vscode.window.showWarningMessage(`Open this link from terminal output?\n${uri}`, {modal:true}, 'Open');
     if (answer === 'Open') await vscode.env.openExternal(vscode.Uri.parse(uri, true));
   }
-  error(error: unknown) { const message = error instanceof Error ? error.message : String(error); this.send({type:'error',message}); void vscode.window.showErrorMessage(`Termlet: ${message}`); }
+  error(error: unknown) { const message = error instanceof Error ? error.message : String(error); this.send({type:'error',message}); void vscode.window.showErrorMessage(`Termdock: ${message}`); }
   private html(webview: vscode.Webview) {
     const nonce = randomBytes(18).toString('base64');
     const uri = (file: string) => webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, file)).toString();
-    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource}; img-src ${webview.cspSource} data:;"><link rel="stylesheet" href="${uri('dist/xterm.css')}"><link rel="stylesheet" href="${uri('media/style.css')}"><title>Termlet</title></head><body><main id="terminals"></main><section id="empty"><div class="prompt-icon">&gt;_</div><h2>Your terminal, within reach</h2><p id="empty-message">A separate terminal, right where you need it.</p><button id="start">New Terminal</button><button id="trust" hidden>Manage Workspace Trust</button><p class="hint">No shell runs until you start one.</p></section><div id="error" role="alert" hidden></div><script nonce="${nonce}" src="${uri('dist/webview.js')}"></script></body></html>`;
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource}; img-src ${webview.cspSource} data:;"><link rel="stylesheet" href="${uri('dist/xterm.css')}"><link rel="stylesheet" href="${uri('media/style.css')}"><title>Termdock</title></head><body><main id="terminals"></main><section id="empty"><div class="prompt-icon">&gt;_</div><h2>Your terminal, within reach</h2><p id="empty-message">A separate terminal, right where you need it.</p><button id="start">New Terminal</button><button id="trust" hidden>Manage Workspace Trust</button><p class="hint">No shell runs until you start one.</p></section><div id="error" role="alert" hidden></div><script nonce="${nonce}" src="${uri('dist/webview.js')}"></script></body></html>`;
   }
   dispose() { for (const s of this.sessions.values()) s.dispose(); this.sessions.clear(); for (const d of this.disposables) d.dispose(); }
 }
 export function activate(context: vscode.ExtensionContext) {
-  const provider = new Termlet(context);
-  context.subscriptions.push(provider, vscode.window.registerWebviewViewProvider('sidebarTerminal.terminal',provider,{webviewOptions:{retainContextWhenHidden:true}}));
+  const provider = new Termdock(context);
+  context.subscriptions.push(provider, vscode.window.registerWebviewViewProvider('termdock.terminal',provider,{webviewOptions:{retainContextWhenHidden:true}}));
   for (const [name, action] of Object.entries({focus:()=>provider.focus(),new:()=>provider.newTerminal(),clear:()=>provider.clear(),restart:()=>provider.restart(),kill:()=>provider.close(),switch:()=>provider.switchTerminal(),copy:()=>provider.copy(),paste:()=>provider.pasteFromCommand(),settings:()=>provider.settingsCommand()})) {
-    context.subscriptions.push(vscode.commands.registerCommand(`sidebarTerminal.${name}`, async ()=>{try {await action();} catch(e) {provider.error(e);}}));
+    context.subscriptions.push(vscode.commands.registerCommand(`termdock.${name}`, async ()=>{try {await action();} catch(e) {provider.error(e);}}));
   }
 }
 export function deactivate() { /* context subscriptions own terminal disposal. */ }

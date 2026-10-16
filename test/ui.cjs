@@ -10,7 +10,7 @@ const {Session}=require('../dist/session');const pty=require('../dist/vendor/pty
   messages.push(m);
   if(m.type==='ready')await state();
   if(m.type==='new'){
-   const shell=pty.spawn('/bin/sh',['-i'],{name:'xterm-256color',cols:80,rows:24,cwd:'/tmp',env:{...process.env,TERM:'xterm-256color',PS1:'termlet $ '}});shell.onData(d=>output+=d);
+   const shell=pty.spawn('/bin/sh',['-i'],{name:'xterm-256color',cols:80,rows:24,cwd:'/tmp',env:{...process.env,TERM:'xterm-256color',PS1:'termdock $ '}});shell.onData(d=>output+=d);
    active='test';session=new Session(active,'sh 1','/tmp',shell,2000,m=>{void send(m)},()=>{void state()});await state();session.setConnected(true);session.snapshot();
   }
   if(m.type==='input')session?.write(m.data);
@@ -38,7 +38,7 @@ const {Session}=require('../dist/session');const pty=require('../dist/vendor/pty
  session.write("printf 'SNAPSHOT_%s\\n' ONCE\r");await page.waitForFunction(()=>document.querySelector('.xterm-rows').textContent.includes('SNAPSHOT_ONCE'));
  session.snapshot();session.snapshot();await page.waitForTimeout(120);const text=await page.locator('.xterm-rows').innerText();assert.equal(text.split('SNAPSHOT_ONCE').length-1,1);
  assert.equal(await page.locator('header, footer, #toolbar, #sessions, #menu').count(),0,'terminal content has no duplicate toolbar/footer');
- await page.setViewportSize({width:420,height:740});await page.waitForTimeout(160);await page.screenshot({path:'test/termlet-preview.png'});
+ await page.setViewportSize({width:420,height:740});await page.waitForTimeout(160);await page.screenshot({path:'test/termdock-preview.png'});
  session.setConnected(false);session.write("printf 'HIDDEN_%s\\n' KEPT\r");await page.waitForTimeout(100);session.setConnected(true);session.snapshot();await page.waitForFunction(()=>document.querySelector('.xterm-rows').textContent.includes('HIDDEN_KEPT'));
  assert.deepEqual(errors,[]);console.log('PASS: Chromium UI + real PTY: trust/no-auto-start, input/output, Unicode, resize, replay, hidden recovery, toolbar/footer removal, no JS errors.');
  }finally{session?.dispose();await browser.close();}

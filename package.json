@@ -1,8 +1,8 @@
 {
-  "name": "termlet",
-  "displayName": "Termlet",
+  "name": "termdock",
+  "displayName": "Termdock",
   "description": "A compact, independent shell terminal with native controls in the Secondary Side Bar.",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "publisher": "yevin",
   "license": "MIT",
   "engines": {
@@ -16,23 +16,23 @@
     "pty",
     "remote",
     "xterm",
-    "termlet"
+    "termdock"
   ],
   "extensionKind": [
     "workspace"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onView:sidebarTerminal.terminal"
+    "onView:termdock.terminal"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
       "description": "The view is available, but shell processes can only start in trusted workspaces.",
       "restrictedConfigurations": [
-        "sidebarTerminal.shell",
-        "sidebarTerminal.shellArgs",
-        "sidebarTerminal.cwd"
+        "termdock.shell",
+        "termdock.shellArgs",
+        "termdock.cwd"
       ]
     },
     "virtualWorkspaces": {
@@ -44,127 +44,127 @@
     "viewsContainers": {
       "secondarySidebar": [
         {
-          "id": "sidebarTerminal",
-          "title": "Termlet",
+          "id": "termdock",
+          "title": "Termdock",
           "icon": "media/terminal.svg"
         }
       ]
     },
     "views": {
-      "sidebarTerminal": [
+      "termdock": [
         {
           "type": "webview",
-          "id": "sidebarTerminal.terminal",
-          "name": "Termlet",
+          "id": "termdock.terminal",
+          "name": "Termdock",
           "icon": "media/terminal.svg",
-          "contextualTitle": "Termlet"
+          "contextualTitle": "Termdock"
         }
       ]
     },
     "commands": [
       {
-        "command": "sidebarTerminal.focus",
-        "title": "Termlet: Focus"
+        "command": "termdock.focus",
+        "title": "Termdock: Focus"
       },
       {
-        "command": "sidebarTerminal.new",
-        "title": "Termlet: New Terminal",
+        "command": "termdock.new",
+        "title": "Termdock: New Terminal",
         "icon": "$(add)",
-        "enablement": "isWorkspaceTrusted && sidebarTerminal.canCreate"
+        "enablement": "isWorkspaceTrusted && termdock.canCreate"
       },
       {
-        "command": "sidebarTerminal.clear",
-        "title": "Termlet: Clear Display",
+        "command": "termdock.clear",
+        "title": "Termdock: Clear Display",
         "icon": "$(clear-all)",
-        "enablement": "sidebarTerminal.hasSessions"
+        "enablement": "termdock.hasSessions"
       },
       {
-        "command": "sidebarTerminal.restart",
-        "title": "Termlet: Restart Terminal",
+        "command": "termdock.restart",
+        "title": "Termdock: Restart Terminal",
         "icon": "$(refresh)",
-        "enablement": "sidebarTerminal.hasSessions"
+        "enablement": "termdock.hasSessions"
       },
       {
-        "command": "sidebarTerminal.kill",
-        "title": "Termlet: Close Terminal",
+        "command": "termdock.kill",
+        "title": "Termdock: Close Terminal",
         "icon": "$(trash)",
-        "enablement": "sidebarTerminal.hasSessions"
+        "enablement": "termdock.hasSessions"
       },
       {
-        "command": "sidebarTerminal.switch",
-        "title": "Termlet: Switch Terminal",
+        "command": "termdock.switch",
+        "title": "Termdock: Switch Terminal",
         "icon": "$(list-selection)",
-        "enablement": "sidebarTerminal.hasSessions"
+        "enablement": "termdock.hasSessions"
       },
       {
-        "command": "sidebarTerminal.copy",
-        "title": "Termlet: Copy Selection",
-        "enablement": "sidebarTerminal.hasSessions"
+        "command": "termdock.copy",
+        "title": "Termdock: Copy Selection",
+        "enablement": "termdock.hasSessions"
       },
       {
-        "command": "sidebarTerminal.paste",
-        "title": "Termlet: Paste",
-        "enablement": "sidebarTerminal.activeRunning"
+        "command": "termdock.paste",
+        "title": "Termdock: Paste",
+        "enablement": "termdock.activeRunning"
       },
       {
-        "command": "sidebarTerminal.settings",
-        "title": "Termlet: Settings"
+        "command": "termdock.settings",
+        "title": "Termdock: Settings"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "sidebarTerminal.switch",
-          "when": "view == sidebarTerminal.terminal",
+          "command": "termdock.switch",
+          "when": "view == termdock.terminal",
           "group": "navigation@1"
         },
         {
-          "command": "sidebarTerminal.new",
-          "when": "view == sidebarTerminal.terminal",
+          "command": "termdock.new",
+          "when": "view == termdock.terminal",
           "group": "navigation@2"
         },
         {
-          "command": "sidebarTerminal.kill",
-          "when": "view == sidebarTerminal.terminal",
+          "command": "termdock.kill",
+          "when": "view == termdock.terminal",
           "group": "navigation@3"
         },
         {
-          "command": "sidebarTerminal.clear",
-          "when": "view == sidebarTerminal.terminal",
+          "command": "termdock.clear",
+          "when": "view == termdock.terminal",
           "group": "1_terminal@1"
         },
         {
-          "command": "sidebarTerminal.restart",
-          "when": "view == sidebarTerminal.terminal",
+          "command": "termdock.restart",
+          "when": "view == termdock.terminal",
           "group": "1_terminal@2"
         },
         {
-          "command": "sidebarTerminal.copy",
-          "when": "view == sidebarTerminal.terminal",
+          "command": "termdock.copy",
+          "when": "view == termdock.terminal",
           "group": "2_clipboard@1"
         },
         {
-          "command": "sidebarTerminal.paste",
-          "when": "view == sidebarTerminal.terminal",
+          "command": "termdock.paste",
+          "when": "view == termdock.terminal",
           "group": "2_clipboard@2"
         },
         {
-          "command": "sidebarTerminal.settings",
-          "when": "view == sidebarTerminal.terminal",
+          "command": "termdock.settings",
+          "when": "view == termdock.terminal",
           "group": "3_settings@1"
         }
       ]
     },
     "configuration": {
-      "title": "Termlet",
+      "title": "Termdock",
       "properties": {
-        "sidebarTerminal.shell": {
+        "termdock.shell": {
           "type": "string",
           "default": "",
           "scope": "machine-overridable",
           "description": "Shell executable. Empty uses $SHELL on macOS/Linux, or PowerShell on Windows. In Remote SSH this is a path on the remote host."
         },
-        "sidebarTerminal.shellArgs": {
+        "termdock.shellArgs": {
           "type": [
             "array",
             "null"
@@ -176,32 +176,32 @@
           "scope": "machine-overridable",
           "description": "Shell arguments. Null uses -l on macOS and no arguments elsewhere. An empty array disables default arguments."
         },
-        "sidebarTerminal.cwd": {
+        "termdock.cwd": {
           "type": "string",
           "default": "",
           "scope": "machine-overridable",
           "description": "Starting directory. Empty uses the active workspace folder, then the first folder, then your home directory. Supports ${workspaceFolder} and ${userHome}."
         },
-        "sidebarTerminal.fontFamily": {
+        "termdock.fontFamily": {
           "type": "string",
           "default": "",
           "description": "Terminal font. Empty inherits the integrated terminal/editor font."
         },
-        "sidebarTerminal.fontSize": {
+        "termdock.fontSize": {
           "type": "number",
           "default": 0,
           "minimum": 0,
           "maximum": 72,
           "description": "Font size. 0 inherits the integrated terminal font size."
         },
-        "sidebarTerminal.scrollback": {
+        "termdock.scrollback": {
           "type": "integer",
           "default": 2000,
           "minimum": 100,
           "maximum": 10000,
           "description": "Scrollback lines per terminal. Changes apply to new terminals."
         },
-        "sidebarTerminal.cursorBlink": {
+        "termdock.cursorBlink": {
           "type": "boolean",
           "default": true,
           "description": "Blink the terminal cursor."
@@ -216,7 +216,7 @@
     "test:ui": "node test/ui.cjs",
     "check": "npm run typecheck && npm run build && npm test && npm run test:ui",
     "vscode:prepublish": "npm run build",
-    "package": "vsce package --no-dependencies --skip-license --out termlet-0.2.2.vsix"
+    "package": "vsce package --no-dependencies --skip-license --out termdock-0.3.0.vsix"
   },
   "dependencies": {
     "@xterm/xterm": "5.5.0",
@@ -236,7 +236,7 @@
   "author": "yevin",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YevinDong/termlet.git"
+    "url": "https://github.com/YevinDong/termdock.git"
   },
   "icon": "media/icon.png"
 }

@@ -1,4 +1,4 @@
-# Developing Termlet
+# Developing Termdock
 
 ## Build
 
@@ -26,7 +26,7 @@ inkscape media/icon.svg --export-type=png --export-filename=media/icon.png --exp
 
 ## Settings reference
 
-The `sidebarTerminal.*` namespace is retained for upgrade compatibility.
+All settings use the `termdock.*` namespace.
 
 | Setting | Default | Behavior |
 | --- | --- | --- |
@@ -60,4 +60,4 @@ The backend is bundled; it does not load private VS Code native modules. It uses
 - No telemetry, external web assets, HTTP server or network listener is added. Programs run in the terminal may use the network normally.
 - Webview scripts use nonce-based CSP; terminal output is never inserted as HTML and workspace files are not exposed.
 - Output acknowledgements and bounded scrollback control buffering. Unfinished control sequences over 128 KiB are cancelled, suppressing the remainder until a sequence boundary.
-- Browser-only VS Code without a Node.js extension host and virtual filesystems are unsupported. Existing native terminals cannot be imported into Termlet.
+- Browser-only VS Code without a Node.js extension host and virtual filesystems are unsupported. Existing native terminals cannot be imported into Termdock.

@@ -1,15 +1,15 @@
-# Build verification — Termlet 0.2.2
+# Build verification — Termdock 0.3.0
 
-Date: 2026-10-15. Build/test host: Linux x86_64, Node.js 24.19.0.
+Date: 2026-10-16. Build/test host: Linux x86_64, Node.js 24.19.0.
 
 ## Passed
 
 - Strict TypeScript typecheck and production extension/webview bundling.
-- 42 automated tests, including:
+- 45 automated tests, including:
   - 19 clipboard regressions: original double-paste forwarding path, Mac/Windows/Linux shortcuts, native/context paste, unrelated keys and intentional repeated identical pastes.
   - Mocked VS Code API with real PTY: native session title/QuickPick/command contexts, cancellation, hidden replay, exit/close, multiline-paste cancel/accept and clipboard reads spanning session changes/closure.
   - Three documentation/branding checks: author, PNG dimensions, editable SVG, English-first language anchors and Chinese/source consistency.
-  - Manifest regression: unchanged upgrade identity/view/settings keys, Termlet branding and native navigation/overflow actions.
+  - Manifest regression: `termdock.*` view/command/settings keys, Termdock branding and native navigation/overflow actions.
   - Real Linux x64 PTY: TTY detection, input/output, resize, Unicode and exit status.
   - ANSI replay boundaries, incomplete control sequences, overflow limits, output acknowledgements, reconnect races and shell cleanup.
 - All six native binary targets, Windows helper resources and macOS executable modes inspected.
@@ -30,7 +30,7 @@ The original double-paste path is reproduced by source-level tests simulating VS
 
 - Direct VSIX distribution; no Marketplace publication or user-computer installation performed.
 - Author is yevin and the extension icon is an original 256px PNG, with SVG source included.
-- Display name is Termlet. Extension ID is `yevin.termlet` and the version is 0.2.2. `sidebarTerminal.*` view, command and setting IDs are unchanged.
+- Display name is Termdock. Extension ID is `yevin.termdock` and the version is 0.3.0. View, command and setting IDs use `termdock.*`.
 - Requires VS Code >=1.106.0 and a Node.js extension host.
 - Bundled native targets: macOS ARM64/x64, glibc Linux ARM64/x64, Windows ARM64/x64.
 - Linux requires glibc 2.28+; Alpine/musl is unsupported.

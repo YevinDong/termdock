@@ -1,4 +1,4 @@
-# Termlet
+# Termdock
 
 **Your terminal, close at hand.**  
 A lightweight, independent terminal built for VS Code’s Secondary Side Bar.
@@ -17,11 +17,11 @@ Keep your code, the bottom terminal panel, and another set of shells visible at 
 
 ## Quick Start
 
-If the view is not visible, enable **View → Appearance → Secondary Side Bar**. Drag the view or use **Move View** to reposition it. Newer versions install directly over an existing one. If you used a build from before 0.2.2 (extension ID `dot-local.independent-sidebar-terminal`), uninstall it first.
+If the view is not visible, enable **View → Appearance → Secondary Side Bar**. Drag the view or use **Move View** to reposition it. Newer versions install directly over an existing one.
 
 ## Everyday Use
 
-Click **Switch Terminal** to select a shell, **+** to create one, or the **trash** icon to close it. Search for **Termlet** in Settings to customize it. Existing `sidebarTerminal.*` settings remain supported.
+Click **Switch Terminal** to select a shell, **+** to create one, or the **trash** icon to close it. Search for **Termdock** in Settings to customize it.
 
 Copy and paste: use **⌘C / ⌘V** on macOS, or **Ctrl+Shift+C / Ctrl+Shift+V** on Windows and Linux. **Ctrl+C** interrupts the running program. Pasting multiple lines requires confirmation.
 

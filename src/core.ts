@@ -21,8 +21,8 @@ export function shellEnvironment(env: NodeJS.ProcessEnv): Record<string, string>
   }
   result.TERM = 'xterm-256color';
   result.COLORTERM = 'truecolor';
-  result.TERM_PROGRAM = 'termlet';
-  result.TERM_PROGRAM_VERSION = '0.2.2';
+  result.TERM_PROGRAM = 'termdock';
+  result.TERM_PROGRAM_VERSION = '0.3.0';
   return result;
 }
 /** Line breaks or other control characters (e.g. Ctrl+O, ESC) in pasted text can run commands or leave bracketed paste. */

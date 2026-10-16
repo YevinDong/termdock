@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <title>Termlet</title>
+  <title>Termdock</title>
   <desc>A mint shell prompt and light cursor on a rounded deep-teal terminal tile.</desc>
   <defs>
     <linearGradient id="tile" x1="24" y1="16" x2="232" y2="248" gradientUnits="userSpaceOnUse">

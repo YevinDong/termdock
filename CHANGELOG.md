@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 — Termdock
+
+- Renamed to Termdock. Extension ID is now `yevin.termdock`; uninstall `yevin.termlet` and earlier builds before installing.
+- View, command, context and setting IDs moved from `sidebarTerminal.*` to `termdock.*`. Old `sidebarTerminal.*` settings are no longer read; set them again under `termdock.*`.
+- Shells now see `TERM_PROGRAM=termdock`.
+
 ## 0.2.2 — Security hardening and identity
 
 - Paste now asks for confirmation when the clipboard contains control characters (such as Ctrl+O or ESC), not only line breaks.
