@@ -22,7 +22,7 @@ export function shellEnvironment(env: NodeJS.ProcessEnv): Record<string, string>
   result.TERM = 'xterm-256color';
   result.COLORTERM = 'truecolor';
   result.TERM_PROGRAM = 'termdock';
-  result.TERM_PROGRAM_VERSION = '0.3.0';
+  result.TERM_PROGRAM_VERSION = '0.3.1';
   return result;
 }
 /** Line breaks or other control characters (e.g. Ctrl+O, ESC) in pasted text can run commands or leave bracketed paste. */
@@ -31,7 +31,7 @@ export function pasteRisk(text: string): 'multiline' | 'control' | undefined {
   if (/[\x00-\x08\x0b-\x1f\x7f-\x9f]/.test(text)) return 'control';
   return undefined;
 }
-/** Only web links from terminal output (OSC 8) may be opened. */
+/** Only HTTP(S) links from terminal output may be opened. */
 export function isWebLink(value: unknown): value is string {
   if (typeof value !== 'string' || value.length > 8192) return false;
   try { const url = new URL(value); return url.protocol === 'http:' || url.protocol === 'https:'; } catch { return false; }

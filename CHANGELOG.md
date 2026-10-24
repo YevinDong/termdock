@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 2026-10-24
+
+- Preserve OSC 8 text-link targets when terminal views are hidden and restored; add target hover and a native Open Link context action.
+- Detect plain web URLs, including wrapped URLs, without treating terminal text as HTML.
+- Enable Option-drag selection on macOS when agent CLIs capture the mouse; preserve normal CLI mouse input and Windows/Linux Shift-drag selection.
+
 ## 0.3.0 — Termdock
 
 - Renamed to Termdock. Extension ID is now `yevin.termdock`; uninstall `yevin.termlet` and earlier builds before installing.

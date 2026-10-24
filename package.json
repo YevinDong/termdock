@@ -2,7 +2,7 @@
   "name": "termdock",
   "displayName": "Termdock",
   "description": "A compact, independent shell terminal with native controls in the Secondary Side Bar.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "yevin",
   "license": "MIT",
   "engines": {
@@ -109,9 +109,23 @@
       {
         "command": "termdock.settings",
         "title": "Termdock: Settings"
+      },
+      {
+        "command": "termdock.openLink",
+        "title": "Termdock: Open Link"
       }
     ],
     "menus": {
+      "commandPalette": [
+        { "command": "termdock.openLink", "when": "false" }
+      ],
+      "webview/context": [
+        {
+          "command": "termdock.openLink",
+          "when": "webviewId == termdock.terminal && termdockLink",
+          "group": "navigation@1"
+        }
+      ],
       "view/title": [
         {
           "command": "termdock.switch",
@@ -216,13 +230,14 @@
     "test:ui": "node test/ui.cjs",
     "check": "npm run typecheck && npm run build && npm test && npm run test:ui",
     "vscode:prepublish": "npm run build",
-    "package": "vsce package --no-dependencies --skip-license --out termdock-0.3.0.vsix"
+    "package": "vsce package --no-dependencies --skip-license --out termdock-0.3.1.vsix"
   },
   "dependencies": {
-    "@xterm/xterm": "5.5.0",
     "@xterm/addon-fit": "0.10.0",
     "@xterm/addon-serialize": "0.13.0",
+    "@xterm/addon-web-links": "0.11.0",
     "@xterm/headless": "5.5.0",
+    "@xterm/xterm": "5.5.0",
     "node-pty": "1.2.0-beta.15"
   },
   "devDependencies": {

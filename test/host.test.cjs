@@ -42,6 +42,11 @@ test('VS Code host + real PTY: native controls, trust, session switch, clipboard
   for(const uri of ['file:///etc/passwd','command:workbench.action.terminal.new','javascript:alert(1)'])handler({type:'link',uri});await delay(20);assert.equal(opened.length,0);
   warningAnswer=undefined;handler({type:'link',uri:'https://example.com/'});await delay(20);assert.equal(opened.length,0,'declined link stays closed');
   warningAnswer='default';handler({type:'link',uri:'https://example.com/'});await until(()=>opened.length===1);assert.equal(opened[0],'https://example.com/');
+  const openLink=commands.get('termdock.openLink');assert.equal(typeof openLink,'function');
+  for(const context of [undefined,{},null,{termdockLink:123},{termdockLink:'file:///etc/passwd'},{termdockLink:'command:workbench.action.terminal.new'}])await openLink(context);
+  assert.equal(opened.length,1,'context commands validate untrusted targets too');
+  warningAnswer=undefined;await openLink({termdockLink:'https://example.org/context'});assert.equal(opened.length,1,'context opening also requires confirmation');
+  warningAnswer='default';await openLink({termdockLink:'https://example.org/context'});assert.equal(opened.at(-1),'https://example.org/context');
   // Capture the intended target before a delayed clipboard read; switching must not redirect the paste.
   let release;clipboardRead=()=>new Promise(r=>{release=r});count=pastes().length;handler({type:'paste',id:first});await until(()=>!!release);
   pickAnswer=items=>items.find(item=>item.id===second);await commands.get('termdock.switch')();release('target remains first');await until(()=>pastes().length===count+1);assert.equal(pastes().at(-1).id,first);clipboardRead=undefined;

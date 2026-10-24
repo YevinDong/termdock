@@ -50,6 +50,8 @@ CHROMIUM_PATH=/path/to/chromium npm run test:ui
 
 It intercepts test assets and uses an in-process PTY bridge, without a listening web server. It does not emulate a complete VS Code window. Clipboard unit regressions separately simulate VS Code's keydown forwarding, including intentional repeated pastes and multiline cancellation.
 
+`scripts/serialize-links.mjs` applies a guarded build-time fix to Serialize Addon 0.13.0: preserve OSC 8 targets and the active link across snapshots. It uses pinned xterm internals; source changes fail the build rather than silently dropping the fix. Remove it when the upstream serializer supports OSC 8. `test/session.test.cjs` checks per-cell targets, wrapping, Unicode, alternate buffers and live continuation; the browser harness checks replayed labels and platform-specific forced selection.
+
 The backend is bundled; it does not load private VS Code native modules. It uses Microsoft node-pty 1.2.0-beta.15, xterm.js/headless 5.5.0, Fit Addon 0.10.0 and Serialize Addon 0.13.0. The PTY beta supplies Node-API prebuilds for the six supported platform/architecture pairs. Third-party licenses are in `THIRD_PARTY_NOTICES.txt`.
 
 ## Lifecycle and security

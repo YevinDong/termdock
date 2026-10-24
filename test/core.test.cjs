@@ -11,6 +11,7 @@ test('shell selection and explicit argument preservation',()=>{
 });
 test('environment sanitizes Electron launch but retains remote code CLI',()=>{
  const env=shellEnvironment({PATH:'/bin',NODE_OPTIONS:'--inspect',ELECTRON_RUN_AS_NODE:'1',VSCODE_IPC_HOOK_CLI:'/socket',VSCODE_CLI_REQUIRE_TOKEN:'1',VSCODE_AMD_ENTRYPOINT:'bad'});
+ assert.equal(env.TERM_PROGRAM_VERSION,require('../package.json').version);
  assert.equal(env.PATH,'/bin');assert.equal(env.NODE_OPTIONS,undefined);assert.equal(env.ELECTRON_RUN_AS_NODE,undefined);assert.equal(env.VSCODE_AMD_ENTRYPOINT,undefined);assert.equal(env.VSCODE_IPC_HOOK_CLI,'/socket');assert.equal(env.TERM,'xterm-256color');
 });
 test('paste risk flags line breaks and other control characters',()=>{

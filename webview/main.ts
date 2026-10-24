@@ -1,5 +1,6 @@
 import { Terminal, ITheme } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { WebLinksAddon } from '@xterm/addon-web-links';
 import { handleClipboardKey, handleNativePaste } from './clipboard';
 declare function acquireVsCodeApi(): {postMessage(message: unknown): void};
 const vscode = acquireVsCodeApi();
@@ -32,8 +33,14 @@ function copy() { const tab=active?tabs.get(active):undefined; if(tab?.term.hasS
 function paste() { if(active) post({type:'paste',id:active}); }
 function create(info:Info) {
   const element=document.createElement('div'); element.className='terminal-pane'; element.hidden=true; el('terminals').appendChild(element);
-  const term=new Terminal({...settings,theme:theme(),allowProposedApi:false,convertEol:false,macOptionIsMeta:true,scrollOnUserInput:true,linkHandler:{allowNonHttpProtocols:false,activate:(_event,uri)=>post({type:'link',uri})}});
-  const fitter=new FitAddon(); term.loadAddon(fitter); term.open(element);
+  const links={
+    allowNonHttpProtocols:false,
+    activate:(event:MouseEvent,uri:string)=>{if(event.button===0&&!term.hasSelection()) post({type:'link',uri});},
+    hover:(_event:MouseEvent,uri:string)=>{element.title=uri;element.setAttribute('data-vscode-context',JSON.stringify({termdockLink:uri}));},
+    leave:()=>{element.removeAttribute('title');element.removeAttribute('data-vscode-context');}
+  };
+  const term=new Terminal({...settings,theme:theme(),allowProposedApi:false,convertEol:false,macOptionIsMeta:true,macOptionClickForcesSelection:true,scrollOnUserInput:true,linkHandler:links});
+  const fitter=new FitAddon(); term.loadAddon(fitter); term.loadAddon(new WebLinksAddon(links.activate,links)); term.open(element);
   const tab:Tab={term,fit:fitter,element,seq:0,initialized:false,info}; tabs.set(info.id,tab);
   term.onData(data=>{if(tab.info.running) post({type:'input',id:info.id,data});});
   term.onResize(size=>post({type:'resize',id:info.id,...size}));

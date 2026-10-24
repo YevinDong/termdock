@@ -1,4 +1,15 @@
-# Build verification — Termdock 0.3.0
+# Build verification — Termdock 0.3.1
+
+## 0.3.1 URL / mouse-selection fixes — 2026-10-24
+
+- `npm run check` passed on Linux x64, Node.js 24.21.0: strict typecheck, production bundles, 46 Node tests, and Chromium UI tests with real PTYs.
+- Reproduced the upstream serializer defect: an OSC 8 `URL` label serialized as underlined text without its URI. The guarded build-time fix preserves per-cell targets in normal/alternate buffers, Unicode/wrapped/scrollback labels and an open link continued by later live output.
+- Browser tests cover piAgent-style labels through a real PTY and host hide/reconnect/snapshot, target hover, click dispatch, native-context-menu arguments, wrapped plain URLs, drag-without-opening, and selection/copy while mouse reporting is enabled.
+- Browser tests override `navigator.platform` for Linux, Windows and macOS. Normal CLI mouse reports remain enabled; Shift-drag (Windows/Linux) and Option-drag (macOS) select without sending the gesture to the CLI.
+- These are Linux-hosted browser tests, not a live macOS piAgent/VS Code test. Actual VS Code native menu rendering and macOS clipboard integration still need desktop verification.
+- Build: `termdock-0.3.1.vsix`. Manifest, lockfile, shell `TERM_PROGRAM_VERSION`, changelog and package output name are synchronized to 0.3.1. No Marketplace publication or installation on a user machine was performed.
+
+## Original 0.3.0 release verification
 
 Date: 2026-10-16. Build/test host: Linux x86_64, Node.js 24.19.0.
 

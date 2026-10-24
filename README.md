@@ -25,6 +25,10 @@ Click **Switch Terminal** to select a shell, **+** to create one, or the **trash
 
 Copy and paste: use **⌘C / ⌘V** on macOS, or **Ctrl+Shift+C / Ctrl+Shift+V** on Windows and Linux. **Ctrl+C** interrupts the running program. Pasting multiple lines requires confirmation.
 
+Web URLs and OSC 8 text links in terminal output are clickable, including after hiding/restoring the view. Hover to see the target; right-click for **Termdock: Open Link**. Only HTTP(S) targets are opened, after confirmation.
+
+If an agent CLI captures the mouse, hold **Option** on macOS or **Shift** on Windows/Linux while dragging to select text, then use the copy shortcut above. Unmodified mouse input still goes to the CLI.
+
 ## Before You Use It
 
 - Requires **VS Code 1.106+**. **ARM64 / x64** backends are bundled for macOS, Windows, and glibc Linux. Linux requires glibc 2.28+; Alpine/musl is not supported. Windows requires Windows 10 version 1809 or later, or Windows 11.

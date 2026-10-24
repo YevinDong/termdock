@@ -25,6 +25,10 @@
 
 复制粘贴：macOS 使用 **⌘C / ⌘V**；Windows 和 Linux 使用 **Ctrl+Shift+C / Ctrl+Shift+V**。**Ctrl+C** 中断程序。粘贴多行内容前会询问确认。
 
+终端输出中的网址及 OSC 8 文字超链接支持点击，隐藏再恢复视图后仍保留链接。悬停可查看目标地址，也可右键选择 **Termdock: Open Link**；仅支持 HTTP(S) 地址，打开前会确认。
+
+若 Agent CLI 接管鼠标，macOS 按住 **Option** 拖动选区，Windows/Linux 按住 **Shift** 拖动，再使用上述快捷键复制。不按修饰键时，鼠标仍交给 CLI 处理。
+
 ## 使用须知
 
 - 需要 **VS Code 1.106+**。已打包 macOS、Windows 与 glibc Linux 的 **ARM64 / x64** 后端。Linux 需要 glibc 2.28+，不支持 Alpine/musl；Windows 需要 Windows 10 1809+ 或 Windows 11。

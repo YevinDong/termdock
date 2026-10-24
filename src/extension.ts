@@ -156,10 +156,11 @@ class Termdock implements vscode.WebviewViewProvider, vscode.Disposable {
       case 'paste': if(s) await this.paste(s.id); break;
       case 'trust': await vscode.commands.executeCommand('workbench.trust.manage'); break;
       case 'settings': await this.settingsCommand(); break;
-      case 'link': if (isWebLink(m.uri)) await this.openLink(m.uri); break;
+      case 'link': await this.openLink(m.uri); break;
     }
   }
-  private async openLink(uri: string) {
+  async openLink(uri: unknown) {
+    if (!isWebLink(uri)) return;
     const answer = await vscode.window.showWarningMessage(`Open this link from terminal output?\n${uri}`, {modal:true}, 'Open');
     if (answer === 'Open') await vscode.env.openExternal(vscode.Uri.parse(uri, true));
   }
@@ -174,8 +175,8 @@ class Termdock implements vscode.WebviewViewProvider, vscode.Disposable {
 export function activate(context: vscode.ExtensionContext) {
   const provider = new Termdock(context);
   context.subscriptions.push(provider, vscode.window.registerWebviewViewProvider('termdock.terminal',provider,{webviewOptions:{retainContextWhenHidden:true}}));
-  for (const [name, action] of Object.entries({focus:()=>provider.focus(),new:()=>provider.newTerminal(),clear:()=>provider.clear(),restart:()=>provider.restart(),kill:()=>provider.close(),switch:()=>provider.switchTerminal(),copy:()=>provider.copy(),paste:()=>provider.pasteFromCommand(),settings:()=>provider.settingsCommand()})) {
-    context.subscriptions.push(vscode.commands.registerCommand(`termdock.${name}`, async ()=>{try {await action();} catch(e) {provider.error(e);}}));
+  for (const [name, action] of Object.entries({focus:()=>provider.focus(),new:()=>provider.newTerminal(),clear:()=>provider.clear(),restart:()=>provider.restart(),kill:()=>provider.close(),switch:()=>provider.switchTerminal(),copy:()=>provider.copy(),paste:()=>provider.pasteFromCommand(),settings:()=>provider.settingsCommand(),openLink:(linkContext?:{termdockLink?:unknown})=>provider.openLink(linkContext?.termdockLink)})) {
+    context.subscriptions.push(vscode.commands.registerCommand(`termdock.${name}`, async (linkContext?:{termdockLink?:unknown})=>{try {await action(linkContext);} catch(e) {provider.error(e);}}));
   }
 }
 export function deactivate() { /* context subscriptions own terminal disposal. */ }
