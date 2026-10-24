@@ -14,6 +14,11 @@ test('environment sanitizes Electron launch but retains remote code CLI',()=>{
  assert.equal(env.TERM_PROGRAM_VERSION,require('../package.json').version);
  assert.equal(env.PATH,'/bin');assert.equal(env.NODE_OPTIONS,undefined);assert.equal(env.ELECTRON_RUN_AS_NODE,undefined);assert.equal(env.VSCODE_AMD_ENTRYPOINT,undefined);assert.equal(env.VSCODE_IPC_HOOK_CLI,'/socket');assert.equal(env.TERM,'xterm-256color');
 });
+test('shell advertises OSC 8 to pi without overriding explicit capability choices',()=>{
+ assert.equal(shellEnvironment({TERM_PROGRAM:'vscode'}).PI_HYPERLINKS,'1');
+ assert.equal(shellEnvironment({}).TERM_PROGRAM,'termdock');
+ for(const value of ['0','1','auto',''])assert.equal(shellEnvironment({PI_HYPERLINKS:value}).PI_HYPERLINKS,value);
+});
 test('paste risk flags line breaks and other control characters',()=>{
  assert.equal(pasteRisk('echo ok'),undefined);assert.equal(pasteRisk('a\tb'),undefined);assert.equal(pasteRisk('中文 ✓'),undefined);
  assert.equal(pasteRisk('a\nb'),'multiline');assert.equal(pasteRisk('a\r'),'multiline');

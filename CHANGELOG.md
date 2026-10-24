@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 — 2026-10-24
+
+- Advertise OSC 8 support to pi with `PI_HYPERLINKS=1` in new shells, preserving explicit user overrides. This prevents pi from downgrading labels such as `#822` to plain `#822 (url)` text, whose hard-wrapped URL could be detected only partially.
+- Test pi's installed Markdown renderer and capability detection through the production shell environment, a real PTY, and the browser; verify labels and both ends of a hard-wrapped URL retain the complete target before and after snapshot replay.
+- After upgrading, start a new terminal and restart pi; existing processes keep their original environment.
+
 ## 0.3.1 — 2026-10-24
 
 - Preserve OSC 8 text-link targets when terminal views are hidden and restored; add target hover and a native Open Link context action.

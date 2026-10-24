@@ -1,4 +1,13 @@
-# Build verification — Termdock 0.3.1
+# Build verification — Termdock 0.3.2
+
+## 0.3.2 pi capability fix — 2026-10-24
+
+- Reproduced the user-visible failure with installed `@earendil-works/pi-tui@1.0.4`, not a synthetic OSC 8 string: the production Termdock environment made pi report `hyperlinks: false`, yielding `#822 (url)` with a hard-wrapped fallback URL.
+- New shells default `PI_HYPERLINKS` to `1` without overwriting explicit user values. `TERM_PROGRAM` remains `termdock`; no terminal identity spoofing or adjacent-line URL guessing is used.
+- 47 Node tests plus typecheck/build and Chromium UI tests pass. With `PI_TUI_PATH` set, the actual pi Markdown renderer runs in a real PTY; `#822`, the first URL segment and its final character all hover/click with the complete `https://github.com/Qiyin-Tech/orchestra-backend/pull/822` target, live and after host snapshot replay.
+- Linux-hosted tests simulate Linux/Windows/macOS `navigator.platform`; no live macOS VS Code/pi window verification is claimed. `test/termdock-pi-preview.png` captures the macOS-platform browser result.
+- Build: `termdock-0.3.2.vsix`. Install, create a new terminal and restart pi; already running shells do not inherit the new environment. Existing 0.3.1 shells can use `PI_HYPERLINKS=1 pi` as a temporary workaround.
+
 
 ## 0.3.1 URL / mouse-selection fixes — 2026-10-24
 

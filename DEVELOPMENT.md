@@ -48,6 +48,14 @@ See `VERIFICATION.md` for the release's actual checks and untested platforms. A 
 CHROMIUM_PATH=/path/to/chromium npm run test:ui
 ```
 
+To exercise the actual pi renderer and capability detection, point `PI_TUI_PATH` at an installed `@earendil-works/pi-tui` package directory (no extra project dependency):
+
+```sh
+PI_TUI_PATH=/path/to/@earendil-works/pi-tui CHROMIUM_PATH=/path/to/chromium npm run check
+```
+
+`test/pi-output.mjs` renders the reported Chinese PR label `#822` and a hard-wrapped URL. The browser harness runs it through a real PTY with the production `shellEnvironment`, checks the complete target at the label and both ends of the URL, and repeats after snapshot replay. Without `PI_TUI_PATH`, only the pi-specific renderer check is omitted; the environment regression always runs in `npm test`.
+
 It intercepts test assets and uses an in-process PTY bridge, without a listening web server. It does not emulate a complete VS Code window. Clipboard unit regressions separately simulate VS Code's keydown forwarding, including intentional repeated pastes and multiline cancellation.
 
 `scripts/serialize-links.mjs` applies a guarded build-time fix to Serialize Addon 0.13.0: preserve OSC 8 targets and the active link across snapshots. It uses pinned xterm internals; source changes fail the build rather than silently dropping the fix. Remove it when the upstream serializer supports OSC 8. `test/session.test.cjs` checks per-cell targets, wrapping, Unicode, alternate buffers and live continuation; the browser harness checks replayed labels and platform-specific forced selection.

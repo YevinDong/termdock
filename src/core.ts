@@ -22,7 +22,9 @@ export function shellEnvironment(env: NodeJS.ProcessEnv): Record<string, string>
   result.TERM = 'xterm-256color';
   result.COLORTERM = 'truecolor';
   result.TERM_PROGRAM = 'termdock';
-  result.TERM_PROGRAM_VERSION = '0.3.1';
+  result.TERM_PROGRAM_VERSION = '0.3.2';
+  // pi treats unknown TERM_PROGRAM names as hyperlink-incapable; xterm supports OSC 8.
+  result.PI_HYPERLINKS ??= '1';
   return result;
 }
 /** Line breaks or other control characters (e.g. Ctrl+O, ESC) in pasted text can run commands or leave bracketed paste. */

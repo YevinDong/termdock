@@ -1,5 +1,5 @@
 const {chromium}=require('playwright-core');const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');
-const {Session}=require('../dist/session');const pty=require('../dist/vendor/pty');
+const {Session}=require('../dist/session');const pty=require('../dist/vendor/pty');const {shellEnvironment}=require('../dist/core');
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  try { for (const platform of ['Linux x86_64','Win32','MacIntel']) {
@@ -11,7 +11,7 @@ const {Session}=require('../dist/session');const pty=require('../dist/vendor/pty
   messages.push(m);
   if(m.type==='ready')await state();
   if(m.type==='new'){
-   const shell=pty.spawn('/bin/sh',['-i'],{name:'xterm-256color',cols:80,rows:24,cwd:'/tmp',env:{...process.env,TERM:'xterm-256color',PS1:'termdock $ '}});shell.onData(d=>output+=d);
+   const shell=pty.spawn('/bin/sh',['-i'],{name:'xterm-256color',cols:80,rows:24,cwd:'/tmp',env:shellEnvironment({...process.env,PS1:'termdock $ '})});shell.onData(d=>output+=d);
    active='test';session=new Session(active,'sh 1','/tmp',shell,2000,m=>{void send(m)},()=>{void state()});await state();session.setConnected(true);session.snapshot();
   }
   if(m.type==='input'&&!interactionFixture)session?.write(m.data);
@@ -66,6 +66,42 @@ const {Session}=require('../dist/session');const pty=require('../dist/vendor/pty
   assert.equal(JSON.parse(await page.locator('.terminal-pane').getAttribute('data-vscode-context')).termdockLink,uri);
   return p;
  };
+ if(process.env.PI_TUI_PATH){
+  // Run pi's actual Markdown/capability detection with the production shell environment.
+  const quote=s=>"'"+s.replaceAll("'","'\\''")+"'";
+  session.write(`${quote(process.execPath)} ${quote(path.join(__dirname,'pi-output.mjs'))}\r`);
+  await page.waitForFunction(()=>document.querySelector('.xterm-rows').textContent.includes('PI_RENDER_DONE'));
+  const rendered=await page.locator('.xterm-rows').textContent();
+  assert.match(rendered,/PI_LINKS=true/,'pi must detect hyperlink support in a Termdock shell');
+  assert.match(rendered,/PR：#822。/,'pi renders the PR label without its fallback URL');
+  const checkPiLinks=async()=>{
+   await page.waitForFunction(()=>document.querySelector('.xterm-rows').textContent.includes('#822'));
+   for(const text of ['#822','https://github.com','pull/822']){
+    const point=await page.evaluate(text=>{
+     const walker=document.createTreeWalker(document.querySelector('.xterm-rows'),NodeFilter.SHOW_TEXT);const nodes=[];let node;
+     while(node=walker.nextNode())nodes.push(node);
+     let at=nodes.map(n=>n.textContent).join('').indexOf(text);if(at<0)return;
+     at+=text.length-1; // Check the URL's last character even when it spans DOM rows/spans.
+     for(const node of nodes){
+      if(at>=node.textContent.length){at-=node.textContent.length;continue;}
+      const range=document.createRange();range.setStart(node,at);range.setEnd(node,at+1);
+      const box=range.getBoundingClientRect();return{x:box.x+box.width/2,y:box.y+box.height/2};
+     }
+    },text);
+    assert.ok(point,`pi output contains ${text}: ${await page.locator('.xterm-rows').textContent()}`);await page.mouse.move(point.x,point.y);
+    const uri='https://github.com/Qiyin-Tech/orchestra-backend/pull/822';
+    await page.waitForFunction(uri=>document.querySelector('.terminal-pane').title===uri,uri);
+    assert.equal(await page.locator('.xterm-cursor-pointer').count(),1);
+    if(text==='#822'&&platform==='MacIntel')await page.screenshot({path:'test/termdock-pi-preview.png'});
+    const count=messages.filter(m=>m.type==='link').length;await page.mouse.click(point.x,point.y);await page.waitForTimeout(30);
+    assert.equal(messages.filter(m=>m.type==='link').length,count+1);assert.equal(messages.filter(m=>m.type==='link').at(-1).uri,uri);
+   }
+  };
+  await checkPiLinks();
+  const before=await page.evaluate(()=>window.__acks);session.setConnected(false);session.setConnected(true);await new Promise(r=>session.snapshot(r));
+  await page.waitForFunction(count=>window.__acks>count,before);await checkPiLinks();
+  console.log(`PASS: ${platform}: real pi renderer #822 and both hard-wrapped URL segments preserve full target, live and replayed.`);
+ }
  // Reproduce piAgent-style label links through a real PTY, then hide/reconnect/replay.
  session.write(`printf '\\033[2J\\033[H\\033]8;;${target}\\007PI_AGENT_LINK\\033]8;;\\007\\n'\r`);
  await page.waitForFunction(()=>document.querySelector('.xterm-rows').textContent.startsWith('PI_AGENT_LINK'));

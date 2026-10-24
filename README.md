@@ -27,6 +27,8 @@ Copy and paste: use **⌘C / ⌘V** on macOS, or **Ctrl+Shift+C / Ctrl+Shift+V**
 
 Web URLs and OSC 8 text links in terminal output are clickable, including after hiding/restoring the view. Hover to see the target; right-click for **Termdock: Open Link**. Only HTTP(S) targets are opened, after confirmation.
 
+For pi, new shells default to `PI_HYPERLINKS=1` so text labels remain real hyperlinks instead of `label (url)` fallbacks. Existing environment overrides are preserved; pi's explicit `terminal.hyperlinks` setting still takes precedence. After upgrading, create a new terminal and restart pi: existing processes do not receive new environment variables.
+
 If an agent CLI captures the mouse, hold **Option** on macOS or **Shift** on Windows/Linux while dragging to select text, then use the copy shortcut above. Unmodified mouse input still goes to the CLI.
 
 ## Before You Use It
