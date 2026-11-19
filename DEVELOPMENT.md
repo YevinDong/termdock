@@ -58,9 +58,13 @@ PI_TUI_PATH=/path/to/@earendil-works/pi-tui CHROMIUM_PATH=/path/to/chromium npm 
 
 It intercepts test assets and uses an in-process PTY bridge, without a listening web server. It does not emulate a complete VS Code window. Clipboard unit regressions separately simulate VS Code's keydown forwarding, including intentional repeated pastes and multiline cancellation.
 
-`scripts/serialize-links.mjs` applies a guarded build-time fix to Serialize Addon 0.13.0: preserve OSC 8 targets and the active link across snapshots. It uses pinned xterm internals; source changes fail the build rather than silently dropping the fix. Remove it when the upstream serializer supports OSC 8. `test/session.test.cjs` checks per-cell targets, wrapping, Unicode, alternate buffers and live continuation; the browser harness checks replayed labels and platform-specific forced selection.
+`scripts/serialize-links.mjs` applies a guarded build-time fix to Serialize Addon 0.14.0 to preserve OSC 8 targets and the active link across snapshots. Remove it when the upstream serializer supports OSC 8. `test/session.test.cjs` checks per-cell targets, wrapping, Unicode, alternate buffers and live continuation.
 
-The backend is bundled; it does not load private VS Code native modules. It uses Microsoft node-pty 1.2.0-beta.15, xterm.js/headless 5.5.0, Fit Addon 0.10.0 and Serialize Addon 0.13.0. The PTY beta supplies Node-API prebuilds for the six supported platform/architecture pairs. Third-party licenses are in `THIRD_PARTY_NOTICES.txt`.
+The webview and headless mirror both use xterm 6.0.0 and `15-graphemes`. `scripts/unicode-graphemes.mjs` backports the upstream fix for Unicode Graphemes Addon 0.4.0 to read a Node.js Buffer at its actual byte offset. Both emulators apply resizes in output order. The shared resize helper trims stale cells outside the new alternate-screen grid and clears wide characters split at the right edge. The browser harness checks the fitted grid, alternate-screen narrowing, grapheme wrapping, and replayed links.
+
+The xterm container sets `text-spacing-trim: space-all` so Chromium uses full punctuation spacing for both the renderer's repeated-glyph measurements and the actual terminal rows. The browser harness checks that mixed CJK and ASCII rows fit their cell grid through the last character.
+
+The bundled backend uses Microsoft node-pty 1.2.0-beta.15. The PTY beta supplies Node-API prebuilds for the six supported platform/architecture pairs. Third-party licenses are in `THIRD_PARTY_NOTICES.txt`.
 
 ## Lifecycle and security
 

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// ponytail: pinned xterm 5.5 / serialize 0.13 internals; remove when upstream fixes OSC 8 snapshots.
+// ponytail: pinned xterm 6.0 / serialize 0.14 internals; remove when upstream fixes OSC 8 snapshots.
 // https://github.com/xtermjs/xterm.js/issues/6189
 export const serializeLinks = {
   name: 'serialize-osc8',

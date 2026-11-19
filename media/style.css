@@ -6,8 +6,8 @@ body { display:flex;flex-direction:column;font-family:var(--vscode-font-family,s
 button { font:inherit;cursor:pointer;border:1px solid transparent;border-radius:3px;white-space:nowrap; }
 button:focus-visible { outline:1px solid var(--vscode-focusBorder,#007fd4);outline-offset:2px; }
 #terminals { flex:1;min-height:0;position:relative;overflow:hidden; }
-.terminal-pane { position:absolute;inset:0;padding:5px 0 0 7px; }
-.xterm { height:100%; }
+.terminal-pane { position:absolute;inset:5px 0 0 7px; }
+.xterm { height:100%;text-spacing-trim:space-all; }
 .xterm .xterm-viewport { overscroll-behavior:contain; }
 #empty { position:absolute;inset:0;display:flex;justify-content:center;align-items:center;flex-direction:column;text-align:center;padding:22px; }
 .prompt-icon { font:30px monospace;opacity:.65; }
