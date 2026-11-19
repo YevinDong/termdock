@@ -22,6 +22,56 @@ test('headless snapshot replays ANSI and Unicode and live output remains ordered
  const snap=messages.find(m=>m.type==='snapshot');assert.ok(snap);assert.match(snap.data,/你好 terminal/);assert.equal(snap.seq,1);
  p.emit('data','\r\nafter');await tick();assert.ok(messages.some(m=>m.type==='data'&&m.seq===2&&m.data.includes('after')));s.dispose();
 });
+test('Unicode 15 graphemes keep their cells at a wrap boundary and through replay', async () => {
+ const {p,s,messages}=fixture(12,4);
+ try {
+  assert.equal(s.mirror.unicode.activeVersion,'15-graphemes');
+  s.setConnected(true);
+  p.emit('data','1234567890𰀀👩‍💻好');
+  await new Promise(done=>s.snapshot(done));
+  const first=s.mirror.buffer.active.getLine(0);
+  const second=s.mirror.buffer.active.getLine(1);
+  assert.equal(first.getCell(10).getChars(),'𰀀');
+  assert.equal(first.getCell(10).getWidth(),2);
+  assert.equal(second.isWrapped,true);
+  assert.equal(second.getCell(0).getChars(),'👩‍💻');
+  assert.equal(second.getCell(0).getWidth(),2);
+  assert.equal(second.getCell(2).getChars(),'好');
+  const snapshot=messages.find(message=>message.type==='snapshot');
+  const restored=fixture(snapshot.cols,snapshot.rows);
+  try {
+   await write(restored.s.mirror,'\x1bc'+snapshot.data);
+   assert.equal(restored.s.serializer.serialize(),s.serializer.serialize());
+   assert.equal(restored.s.mirror.buffer.active.getLine(1).getCell(2).getChars(),'好');
+  } finally { restored.s.dispose(); }
+ } finally { s.dispose(); }
+});
+test('snapshots and queued PTY output keep their dimensions across alternate-screen shrink', async () => {
+ const {p,s,messages}=fixture(12,4);
+ try {
+  s.setConnected(true);
+  p.emit('data','\x1b[?1049h123456789好X\r\n012345678912');
+  const snapshotDone=new Promise(done=>s.snapshot(done));
+  p.emit('data','\x1b[3;11H12');
+  s.resize(10,4);
+  p.emit('data','\x1b[4;1HNEW_SIZE12');
+  await snapshotDone;
+  await write(s.mirror,'');
+  assert.deepEqual(messages.map(message=>message.type),['data','snapshot','data','resize','data']);
+  assert.equal(messages[1].cols,12);
+  assert.match(messages[1].data,/123456789好X/);
+  assert.equal(messages[3].cols,10);
+  const frame=s.mirror.buffer.active;
+  const rows=Array.from({length:4},(_,row)=>frame.getLine(row));
+  assert.deepEqual(rows.map(row=>row.length),[10,10,10,10]);
+  assert.deepEqual(rows.map(row=>row.translateToString(true)),['123456789','0123456789','','NEW_SIZE12']);
+  assert.equal(rows[0].getCell(9).getWidth(),1);
+  await new Promise(done=>s.snapshot(done));
+  const resized=messages.at(-1);
+  assert.equal(resized.cols,10);
+  assert.doesNotMatch(resized.data,/好|012345678912/);
+ } finally { s.dispose(); }
+});
 test('snapshots preserve OSC 8 labels, wrapped/Unicode/scrollback links and open-link continuation',async()=>{
  for(const alternate of [false,true]){
   const {p,s,messages}=fixture(12,4);

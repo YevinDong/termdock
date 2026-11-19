@@ -2,13 +2,14 @@ import { Terminal, ITheme } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { handleClipboardKey, handleNativePaste } from './clipboard';
+import { enableUnicode, resizeTerminal, type TerminalSize } from '../src/terminal';
 declare function acquireVsCodeApi(): {postMessage(message: unknown): void};
 const vscode = acquireVsCodeApi();
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const post = (message: unknown) => vscode.postMessage(message);
 interface Settings { fontFamily: string; fontSize: number; cursorBlink: boolean; scrollback: number; }
 interface Info { id:string; name:string; running:boolean; cwd:string; exitCode?:number; }
-interface Tab { term:Terminal; fit:FitAddon; element:HTMLDivElement; seq:number; initialized:boolean; info:Info; }
+interface Tab { term:Terminal; fit:FitAddon; element:HTMLDivElement; seq:number; initialized:boolean; info:Info; requestedSize?:TerminalSize; }
 const tabs = new Map<string,Tab>();
 let active: string | undefined;
 let settings: Settings = {fontFamily:'monospace',fontSize:14,cursorBlink:true,scrollback:2000};
@@ -25,7 +26,13 @@ function theme(): ITheme {
 function updateTheme() { for (const tab of tabs.values()) tab.term.options.theme=theme(); }
 function fit() {
   const tab=active&&tabs.get(active); if(!tab || !tab.initialized || tab.element.clientWidth < 20 || tab.element.clientHeight < 20) return;
-  try {const size=tab.fit.proposeDimensions();if(size) tab.term.resize(Math.max(2,Math.min(500,size.cols)),Math.max(2,Math.min(300,size.rows)));} catch { /* Hidden view has no dimensions yet. */ }
+  const proposal = tab.fit.proposeDimensions();
+  if (!proposal || !Number.isFinite(proposal.cols) || !Number.isFinite(proposal.rows)) return;
+  const cols = Math.max(2, Math.min(500, proposal.cols));
+  const rows = Math.max(2, Math.min(300, proposal.rows));
+  if (cols === tab.requestedSize?.cols && rows === tab.requestedSize.rows) return;
+  tab.requestedSize = { cols, rows };
+  post({ type: 'resize', id: tab.info.id, cols, rows });
 }
 function scheduleFit() { if(fitTimer) clearTimeout(fitTimer); fitTimer=setTimeout(fit,40); }
 function focus() { const tab=active&&tabs.get(active); if(tab) tab.term.focus(); }
@@ -39,11 +46,11 @@ function create(info:Info) {
     hover:(_event:MouseEvent,uri:string)=>{element.title=uri;element.setAttribute('data-vscode-context',JSON.stringify({termdockLink:uri}));},
     leave:()=>{element.removeAttribute('title');element.removeAttribute('data-vscode-context');}
   };
-  const term=new Terminal({...settings,theme:theme(),allowProposedApi:false,convertEol:false,macOptionIsMeta:true,macOptionClickForcesSelection:true,scrollOnUserInput:true,linkHandler:links});
+  const term=new Terminal({...settings,theme:theme(),allowProposedApi:true,convertEol:false,macOptionIsMeta:true,macOptionClickForcesSelection:true,scrollOnUserInput:true,linkHandler:links});
+  enableUnicode(term);
   const fitter=new FitAddon(); term.loadAddon(fitter); term.loadAddon(new WebLinksAddon(links.activate,links)); term.open(element);
   const tab:Tab={term,fit:fitter,element,seq:0,initialized:false,info}; tabs.set(info.id,tab);
   term.onData(data=>{if(tab.info.running) post({type:'input',id:info.id,data});});
-  term.onResize(size=>post({type:'resize',id:info.id,...size}));
   term.attachCustomKeyEventHandler(e=>handleClipboardKey(e,navigator.platform,{copy,paste}));
   element.addEventListener('paste',e=>handleNativePaste(e,paste),true);
   return tab;
@@ -76,8 +83,20 @@ window.addEventListener('message',event=>{
     case 'state':state(m);break;
     case 'settings':applySettings(m.settings);break;
     case 'snapshot':
-      if(tab) {tab.initialized=false;tab.seq=m.seq;tab.term.resize(m.cols,m.rows);tab.term.write('\x1bc'+m.data,()=>{tab.initialized=true;post({type:'ack',id:m.id,seq:m.seq});if(m.id===active) {scheduleFit();focus();}});}
+      if (tab) {
+        tab.initialized = false;
+        tab.seq = m.seq;
+        const size = { cols: m.cols, rows: m.rows };
+        tab.requestedSize = size;
+        tab.term.write('\x1bc', () => resizeTerminal(tab.term, size));
+        tab.term.write(m.data, () => {
+          tab.initialized = true;
+          post({ type: 'ack', id: m.id, seq: m.seq });
+          if (m.id === active) { scheduleFit(); focus(); }
+        });
+      }
       break;
+    case 'resize': if (tab) tab.term.write('', () => resizeTerminal(tab.term, m)); break;
     case 'data': if(tab&&m.seq>tab.seq) {tab.seq=m.seq;tab.term.write(m.data,()=>post({type:'ack',id:m.id,seq:m.seq}));}break;
     case 'copy':copy();break;
     case 'paste':if(tab) {tab.term.paste(m.text);if(m.id===active) tab.term.focus();}break;

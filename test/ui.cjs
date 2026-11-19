@@ -40,6 +40,16 @@ const {Session}=require('../dist/session');const pty=require('../dist/vendor/pty
  session.snapshot();session.snapshot();await page.waitForTimeout(120);const text=await page.locator('.xterm-rows').innerText();assert.equal(text.split('SNAPSHOT_ONCE').length-1,1);
  assert.equal(await page.locator('header, footer, #toolbar, #sessions, #menu').count(),0,'terminal content has no duplicate toolbar/footer');
  await page.setViewportSize({width:420,height:740});await page.waitForTimeout(160);await page.screenshot({path:'test/termdock-preview.png'});
+ const screen=await page.locator('.xterm-screen').boundingBox();
+ const rowHeight=screen.height/session.pty.rows;
+ await page.setViewportSize({width:420,height:Math.ceil(rowHeight*session.pty.rows)});
+ await page.waitForFunction(()=>{
+  const screen=document.querySelector('.xterm-screen').getBoundingClientRect();
+  const sidebar=document.querySelector('#terminals').getBoundingClientRect();
+  const scrollbar=document.querySelector('.xterm .scrollbar.vertical').getBoundingClientRect();
+  return screen.y>sidebar.y && screen.bottom<=sidebar.bottom && screen.right<=scrollbar.left+0.5;
+ });
+ await page.setViewportSize({width:420,height:740});
  session.setConnected(false);session.write("printf 'HIDDEN_%s\\n' KEPT\r");await page.waitForTimeout(100);session.setConnected(true);session.snapshot();await page.waitForFunction(()=>document.querySelector('.xterm-rows').textContent.includes('HIDDEN_KEPT'));
  // Deterministic terminal output; record mouse reports without sending them to the shell.
  interactionFixture=true;
@@ -55,14 +65,57 @@ const {Session}=require('../dist/session');const pty=require('../dist/vendor/pty
   await send({type:'snapshot',id:active,seq:session.seq,cols:session.pty.cols,rows:session.pty.rows,data});
   await page.waitForFunction(count=>window.__acks>count,count);
  };
+ const visibleRows=page.locator('.xterm-rows > div');
+ const mixedPrefix='邮件处理（ SMTP、 MIME 等） SQLAlchemy';
+ const prefixCells=Array.from(mixedPrefix, char=>char.codePointAt(0)>127?2:1).reduce((total,width)=>total+width,0);
+ const padding='0'.repeat(session.pty.cols-prefixCells-2);
+ const styledPrefix=mixedPrefix.replace(/SMTP|MIME|SQLAlchemy/g, word=>`\x1b[1m${word}\x1b[0m`);
+ const mixedRows=['12','好'].map(tail=>mixedPrefix+padding+tail);
+ await display(`\x1b[?1049h\x1b[?25l${styledPrefix}${padding}12\r\n${styledPrefix}${padding}好`);
+ await page.waitForFunction(expected=>expected.every((text,index)=>document.querySelector('.xterm-rows').children[index]?.textContent===text),mixedRows);
+ const layout=await page.locator('.xterm').evaluate(terminal=>{
+  const rows=Array.from(terminal.querySelector('.xterm-rows').children).slice(0,2);
+  const overflow=rows.map(row=>{
+   const text=document.createRange();
+   text.selectNodeContents(row);
+   return text.getBoundingClientRect().right-row.getBoundingClientRect().right;
+  });
+  const measured=terminal.querySelector('.xterm-width-cache-measure-container span');
+  const rendered=rows[0].querySelector('span');
+  const spacing=CSS.supports('text-spacing-trim','space-all')
+   ? [measured,rendered].map(span=>getComputedStyle(span).getPropertyValue('text-spacing-trim'))
+   : null;
+  return {overflow,spacing};
+ });
+ assert.ok(layout.overflow.every(pixels=>pixels<=1),`mixed CJK rows must fit the grid: ${layout.overflow} px overflow`);
+ if(layout.spacing)assert.deepEqual(layout.spacing,['space-all','space-all'],'measurement and rendering must use untrimmed CJK punctuation');
+ const fill='0'.repeat(session.pty.cols-2);
+ await display(`\x1b[?1049h\x1b[?25l${fill}𰀀👩‍💻`);
+ await page.waitForFunction(()=>document.querySelector('.xterm-rows').textContent.includes('👩‍💻'));
+ assert.equal(await visibleRows.nth(0).textContent(),fill+'𰀀');
+ assert.equal((await visibleRows.nth(1).textContent()).trimEnd(),'👩‍💻');
+ const wideCols=session.pty.cols;
+ const grid=await page.locator('.xterm-screen').boundingBox();
+ const scrollbar=await page.locator('.xterm .scrollbar.vertical').boundingBox();
+ const narrowWidth=Math.floor(grid.x+scrollbar.width+(wideCols-1.5)*grid.width/wideCols);
+ await page.setViewportSize({width:narrowWidth,height:740});
+ await page.waitForFunction(width=>document.querySelector('.xterm-screen').getBoundingClientRect().width<width,grid.width);
+ assert.equal(session.pty.cols,wideCols-2);
+ assert.equal(await visibleRows.nth(0).textContent(),fill,'alternate screen drops cells outside the new grid');
+ assert.equal((await visibleRows.nth(1).textContent()).trimEnd(),'👩‍💻','the next row retains its full grapheme');
+ const narrowGrid=await page.locator('.xterm-screen').boundingBox();
+ await page.setViewportSize({width:420,height:740});
+ await page.waitForFunction(width=>document.querySelector('.xterm-screen').getBoundingClientRect().width>width,narrowGrid.width);
+ assert.equal(await visibleRows.nth(0).textContent(),fill,'widening does not restore stale cells');
  const cell=async(x,y)=>{
   const box=await page.locator('.xterm-screen').boundingBox();
   return {x:box.x+(x+.5)*box.width/session.pty.cols,y:box.y+(y+.5)*box.height/session.pty.rows};
  };
  const hover=async(x,y,uri)=>{
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const away=await cell(0,session.pty.rows-2);await page.mouse.move(away.x,away.y);
   const p=await cell(x,y);await page.mouse.move(p.x,p.y);
-  await page.waitForFunction(uri=>document.querySelector('.terminal-pane').title===uri,uri);
-  assert.equal(await page.locator('.xterm-cursor-pointer').count(),1);
+  await page.waitForFunction(uri=>document.querySelector('.terminal-pane').title===uri && document.querySelector('.xterm-cursor-pointer')!==null,uri);
   assert.equal(JSON.parse(await page.locator('.terminal-pane').getAttribute('data-vscode-context')).termdockLink,uri);
   return p;
  };
