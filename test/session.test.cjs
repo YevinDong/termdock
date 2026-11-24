@@ -22,6 +22,56 @@ test('headless snapshot replays ANSI and Unicode and live output remains ordered
  const snap=messages.find(m=>m.type==='snapshot');assert.ok(snap);assert.match(snap.data,/你好 terminal/);assert.equal(snap.seq,1);
  p.emit('data','\r\nafter');await tick();assert.ok(messages.some(m=>m.type==='data'&&m.seq===2&&m.data.includes('after')));s.dispose();
 });
+test('Unicode 15 graphemes keep their cells at a wrap boundary and through replay', async () => {
+ const {p,s,messages}=fixture(12,4);
+ try {
+  assert.equal(s.mirror.unicode.activeVersion,'15-graphemes');
+  s.setConnected(true);
+  p.emit('data','1234567890𰀀👩‍💻好');
+  await new Promise(done=>s.snapshot(done));
+  const first=s.mirror.buffer.active.getLine(0);
+  const second=s.mirror.buffer.active.getLine(1);
+  assert.equal(first.getCell(10).getChars(),'𰀀');
+  assert.equal(first.getCell(10).getWidth(),2);
+  assert.equal(second.isWrapped,true);
+  assert.equal(second.getCell(0).getChars(),'👩‍💻');
+  assert.equal(second.getCell(0).getWidth(),2);
+  assert.equal(second.getCell(2).getChars(),'好');
+  const snapshot=messages.find(message=>message.type==='snapshot');
+  const restored=fixture(snapshot.cols,snapshot.rows);
+  try {
+   await write(restored.s.mirror,'\x1bc'+snapshot.data);
+   assert.equal(restored.s.serializer.serialize(),s.serializer.serialize());
+   assert.equal(restored.s.mirror.buffer.active.getLine(1).getCell(2).getChars(),'好');
+  } finally { restored.s.dispose(); }
+ } finally { s.dispose(); }
+});
+test('snapshots and queued PTY output keep their dimensions across alternate-screen shrink', async () => {
+ const {p,s,messages}=fixture(12,4);
+ try {
+  s.setConnected(true);
+  p.emit('data','\x1b[?1049h123456789好X\r\n012345678912');
+  const snapshotDone=new Promise(done=>s.snapshot(done));
+  p.emit('data','\x1b[3;11H12');
+  s.resize(10,4);
+  p.emit('data','\x1b[4;1HNEW_SIZE12');
+  await snapshotDone;
+  await write(s.mirror,'');
+  assert.deepEqual(messages.map(message=>message.type),['data','snapshot','data','resize','data']);
+  assert.equal(messages[1].cols,12);
+  assert.match(messages[1].data,/123456789好X/);
+  assert.equal(messages[3].cols,10);
+  const frame=s.mirror.buffer.active;
+  const rows=Array.from({length:4},(_,row)=>frame.getLine(row));
+  assert.deepEqual(rows.map(row=>row.length),[10,10,10,10]);
+  assert.deepEqual(rows.map(row=>row.translateToString(true)),['123456789','0123456789','','NEW_SIZE12']);
+  assert.equal(rows[0].getCell(9).getWidth(),1);
+  await new Promise(done=>s.snapshot(done));
+  const resized=messages.at(-1);
+  assert.equal(resized.cols,10);
+  assert.doesNotMatch(resized.data,/好|012345678912/);
+ } finally { s.dispose(); }
+});
 test('snapshots preserve OSC 8 labels, wrapped/Unicode/scrollback links and open-link continuation',async()=>{
  for(const alternate of [false,true]){
   const {p,s,messages}=fixture(12,4);
@@ -44,6 +94,27 @@ test('snapshots preserve OSC 8 labels, wrapped/Unicode/scrollback links and open
 test('renderer ACK backpressure and disconnect resume a shell',async()=>{
  const {p,s}=fixture();s.setConnected(true);p.emit('data','x'.repeat(300000));await tick();await tick();assert.equal(p.paused,true);s.ack(1);await tick();assert.equal(p.paused,false);
  p.emit('data','z'.repeat(300000));await tick();assert.equal(p.paused,true);s.setConnected(false);await tick();assert.equal(p.paused,false);s.dispose();
+});
+test('snapshots restore mouse tracking AND encoding after reconnect at every mode boundary',async()=>{
+ for(const alternate of [false,true])for(const tracking of [9,1000,1002,1003])for(const encoding of [0,1006,1016]){
+  const {p,s,messages}=fixture();
+  const restored=new Terminal({allowProposedApi:true,cols:80,rows:24});
+  try{
+   p.emit('data',`${alternate?'\x1b[?1049h':''}TUI\x1b[?${tracking}h${encoding?`\x1b[?${encoding}h`:''}`);
+   s.setConnected(true);await new Promise(done=>s.snapshot(done));
+   const snapshot=messages.filter(m=>m.type==='snapshot').at(-1);
+   await write(restored,'\x1bc'+snapshot.data);
+   assert.equal(restored.modes.mouseTrackingMode,s.mirror.modes.mouseTrackingMode);
+   assert.equal(restored._core.coreMouseService.activeEncoding,s.mirror._core.coreMouseService.activeEncoding,
+    `tracking=${tracking}, encoding=${encoding}, alternate=${alternate}`);
+   // Keep the encoding even when tracking is temporarily disabled at the cutoff.
+   p.emit('data',`\x1b[?${tracking}l`);s.setConnected(false);s.setConnected(true);
+   await new Promise(done=>s.snapshot(done));
+   await write(restored,'\x1bc'+messages.filter(m=>m.type==='snapshot').at(-1).data);
+   await write(restored,`\x1b[?${tracking}h`);
+   assert.equal(restored._core.coreMouseService.activeEncoding,s.mirror._core.coreMouseService.activeEncoding);
+  }finally{s.dispose();restored.dispose();}
+ }
 });
 test('disconnected output still gets replayed, exited shell retained, close kills running shell',async()=>{
  const {p,s,messages}=fixture();p.emit('data','retained');await tick();assert.equal(messages.length,0);s.setConnected(true);await new Promise(r=>s.snapshot(r));assert.match(messages.find(m=>m.type==='snapshot').data,/retained/);

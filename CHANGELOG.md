@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.4 — 2026-11-20
+
+- Keep terminal status, cursor and capability query responses in the host so hiding or restoring the view cannot lose their replies. Suppress duplicate replies from the renderer while retaining its color responses and focus events.
+- Preserve both buffers' scrolling regions, current cursor, pending wrap and saved cursor state across snapshots. Continuing output after restoration keeps fixed headers and footers in place, including after leaving the alternate screen.
+- Add query/reconnect and snapshot continuation regressions, plus a raw-mode PTY application that consumes clicks and wheel input across repeated view restoration.
+- Restore untouched alternate-screen cells after widening, including after a narrow snapshot/reconnect. Erased cells stay erased, and split wide glyphs stay hidden until both columns fit.
+- Preserve hidden columns when a leftward or fixed-count erase reaches the edge of a narrow alternate screen.
+- Keep the webview's last requested dimensions independent of snapshot dimensions so delayed host messages cannot strand the PTY at an older width.
+
+## 0.3.3 — 2026-11-20
+
+- Fix TUI mouse clicks and scrolling stopping after the terminal view is hidden and restored. Snapshots now preserve SGR and SGR pixel mouse encoding together with mouse tracking, including when tracking is temporarily disabled.
+- Forward legacy binary mouse reports to the PTY without UTF-8 re-encoding, preserving byte coordinates in wide terminals.
+- Fix mixed CJK/ASCII text clipping at wrap boundaries and stale alternate-screen cells after narrowing the terminal.
+- Add live/replayed click and wheel regressions for normal and alternate screens, tracking modes, legacy/SGR/pixel encoding, and wide grids.
+
 ## 0.3.2 — 2026-10-24
 
 - Advertise OSC 8 support to pi with `PI_HYPERLINKS=1` in new shells, preserving explicit user overrides. This prevents pi from downgrading labels such as `#822` to plain `#822 (url)` text, whose hard-wrapped URL could be detected only partially.

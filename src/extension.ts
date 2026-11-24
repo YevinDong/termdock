@@ -20,7 +20,7 @@ class Termdock implements vscode.WebviewViewProvider, vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
   constructor(private context: vscode.ExtensionContext) {
     this.disposables.push(vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('termdock') || e.affectsConfiguration('terminal.integrated') || e.affectsConfiguration('editor.fontFamily')) this.send({type:'settings', settings:this.settings()});
+      if (e.affectsConfiguration('termdock') || e.affectsConfiguration('terminal.integrated') || e.affectsConfiguration('editor.fontFamily')) this.send({type:'settings', settings:this.syncSettings()});
     }), vscode.workspace.onDidGrantWorkspaceTrust(() => this.state()));
     this.state();
   }
@@ -40,7 +40,12 @@ class Termdock implements vscode.WebviewViewProvider, vscode.Disposable {
     void vscode.commands.executeCommand('setContext', 'termdock.hasSessions', this.sessions.size > 0);
     void vscode.commands.executeCommand('setContext', 'termdock.activeRunning', !!current?.running && vscode.workspace.isTrusted);
     void vscode.commands.executeCommand('setContext', 'termdock.canCreate', this.sessions.size < 8);
-    this.send({type:'state', sessions:[...this.sessions.values()].map(s=>s.info()), active:this.active, trusted:vscode.workspace.isTrusted, host:vscode.env.remoteName || 'local', settings:this.settings()});
+    this.send({type:'state', sessions:[...this.sessions.values()].map(s=>s.info()), active:this.active, trusted:vscode.workspace.isTrusted, host:vscode.env.remoteName || 'local', settings:this.syncSettings()});
+  }
+  private syncSettings() {
+    const settings = this.settings();
+    for (const session of this.sessions.values()) session.mirror.options.cursorBlink = settings.cursorBlink;
+    return settings;
   }
   private settings() {
     const c = vscode.workspace.getConfiguration('termdock');
@@ -145,7 +150,11 @@ class Termdock implements vscode.WebviewViewProvider, vscode.Disposable {
       case 'ack': if(s && typeof m.seq === 'number' && Number.isSafeInteger(m.seq)) s.ack(m.seq); break;
       case 'new': await this.create(); break;
       case 'select': if (s) { this.active = s.id; this.state(); } break;
-      case 'input': if (vscode.workspace.isTrusted && s && typeof m.data === 'string' && m.data.length <= 1024 * 1024) s.write(m.data); break;
+      case 'input':
+        if (vscode.workspace.isTrusted && s && typeof m.data === 'string' && m.data.length <= 1024 * 1024) {
+          if (m.binary === true) s.writeBinary(m.data); else s.write(m.data);
+        }
+        break;
       case 'resize':
         if (s) { const cols=dimension(m.cols,this.cols,500), rows=dimension(m.rows,this.rows,300); this.cols=cols; this.rows=rows; s.resize(cols, rows); }
         break;

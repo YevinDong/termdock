@@ -1,4 +1,32 @@
-# Build verification — Termdock 0.3.2
+# Build verification — Termdock 0.3.4
+
+## Alternate-screen resize and snapshot fixes
+
+- Added seven Node regressions for repeated shrink/widen and narrow reconnect, wrapped rows (including a wrapped top row after scrolling), wide graphemes and OSC 8 targets, line/display erasure, replacement of a split glyph, and alternate-buffer scrolling. A separate deterministic check passed 250 mixed-width snapshot/reconnect/widen round trips.
+- Added six erase regressions for direction, fixed counts that reach or exceed the viewport edge, and selective erasure of a split wide glyph. Each checks both the live mirror and the restored renderer after widening.
+- Chromium tests drive the real PTY through a delayed wide snapshot and narrow resize, then verify the renderer and PTY return to the fitted width. They also verify that untouched cropped Unicode cells return on widening.
+- `npm run check` passed on Linux x64: strict typecheck, production build, 75 Node tests, and Chromium UI tests with a real PTY and `@earendil-works/pi-tui` 0.86.1. Linux, Windows and macOS browser platform values were exercised. VSIX packaging and archive integrity also passed.
+- A native Windows x64 ConPTY smoke test verified PowerShell Unicode, matching console and host snapshot dimensions at 51×20 → 45×18 → 51×20, and the PowerShell exit code. This does not cover the Windows VS Code desktop UI or the standalone Node process's natural shutdown.
+
+## 0.3.4 query/reconnect and scroll-region fixes — 2026-11-20
+
+- Review reproduced lost cursor-query responses when reconnecting before mirror parsing or hiding between parsing and the output flush. It also reproduced a fixed footer being overwritten after snapshot replay because scrolling margins were reset.
+- The host mirror now owns terminal status/cursor/capability responses. Renderer parser handlers suppress the matching requests, preserving keyboard/mouse input, theme color replies and focus reports. Cursor-blink configuration is synchronized with the mirror.
+- Snapshots include both buffers' scrolling margins, cursor position, pending wrap and saved cursor state. Restoration occurs after snapshot parsing and before later live output; normal-buffer state also survives an alternate-screen session.
+- Added 12 Node regressions covering five query delivery timings, split queries, both buffers with/without origin mode, pending wrap and saved cursor attributes. The real-PTY host check also verifies cursor and cursor-blink query responses without renderer replies.
+- Browser coverage now includes a raw-mode PTY application that waits for cursor responses, consumes mouse clicks and wheel events, and keeps a clickable footer fixed while its body scrolls through three hide/restore cycles. Color replies, focus reports and suppression of duplicate cursor replies are checked separately.
+- Validation passed on Linux x64: strict typecheck, production build, all 62 Node tests, and Chromium tests for simulated Linux/Windows/macOS platforms. The fixed query/reconnect and scroll-region cases are part of the normal test suite.
+- Package: `termdock-0.3.4.vsix`. The previous 0.3.3 mouse fixes are included. No desktop VS Code session with Codex CLI/OpenCode or native Windows/macOS runtime verification is claimed.
+
+## 0.3.3 TUI mouse replay fix — 2026-11-20
+
+- Reproduced two defects before the fix: host snapshots dropped `?1006`/`?1016` while retaining mouse tracking, and live legacy mouse clicks emitted no host input because the webview only subscribed to `onData`. The browser still captured clicks and wheel events, making the TUI appear stuck.
+- Snapshot serialization now preserves mouse encoding independently of tracking. Legacy reports use `onBinary` and a Latin-1 Buffer PTY write, preserving byte coordinates above 127.
+- `npm run check` passed on Linux x64: strict typecheck, production build, all 50 Node tests, and Chromium UI tests with a real PTY and simulated Linux/Windows/macOS platform values.
+- Snapshot tests cover X10/VT200/drag/any tracking, legacy/SGR/SGR pixel encoding, both buffers, and cutoffs while tracking is disabled. Browser tests check live and replayed clicks/wheel across VT200/drag/any, all three encodings and both buffers; wide-grid tests cover binary coordinates above 127 and SGR columns beyond the 223-column legacy limit. The mocked VS Code host test verifies `1b 5b 4d 20 80 e0` reaches a real PTY unchanged.
+- Existing flow-control ACK/disconnect, clipboard, links, Unicode and resize regressions pass. The package also includes the prior CJK wrap-boundary correction.
+- These checks reproduce the terminal protocol failure; no live Codex CLI/OpenCode session inside a desktop VS Code window or native Windows/macOS runtime was tested.
+- Package: `termdock-0.3.3.vsix`. Install through VS Code's **Extensions: Install from VSIX...**, reload as prompted, and start a new terminal/TUI.
 
 ## 0.3.2 pi capability fix — 2026-10-24
 

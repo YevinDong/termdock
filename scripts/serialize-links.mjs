@@ -2,14 +2,31 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// ponytail: pinned xterm 5.5 / serialize 0.13 internals; remove when upstream fixes OSC 8 snapshots.
+// Pinned xterm 6.0 / serialize 0.14 internals; remove as upstream fixes snapshot state.
 // https://github.com/xtermjs/xterm.js/issues/6189
 export const serializeLinks = {
-  name: 'serialize-osc8',
+  name: 'serialize-terminal-state',
   setup(build) {
     build.onLoad({ filter: /[/\\]@xterm[/\\]addon-serialize[/\\]lib[/\\]addon-serialize\.js$/ }, async () => {
       let contents = await readFile('node_modules/@xterm/addon-serialize/src/SerializeAddon.ts', 'utf8');
       const changes = [
+        ['    private readonly _terminal: Terminal\n', '    private readonly _terminal: Terminal,\n    private readonly _fixedRows = false\n'],
+        ['if (!nextLine.isWrapped) {', 'if (this._fixedRows || !nextLine.isWrapped) {'],
+        ['buffer: IBuffer, scrollback?: number): string {', 'buffer: IBuffer, scrollback?: number, fixedRows = false): string {'],
+        ['    }, false);\n', '    }, false, fixedRows);\n'],
+        ['excludeFinalCursorPosition: boolean): string {\n    const handler = new StringSerializeHandler(buffer, terminal);',
+          'excludeFinalCursorPosition: boolean, fixedRows = false): string {\n    const handler = new StringSerializeHandler(buffer, terminal, fixedRows);'],
+        ['serialize(options?: ISerializeOptions): string {', 'serialize(options?: ISerializeOptions & { fixedAlternateRows?: boolean }): string {'],
+        ['this._terminal.buffer.alternate, undefined);', 'this._terminal.buffer.alternate, undefined, options?.fixedAlternateRows);'],
+        ['    // Default: true\n', String.raw`
+    // Tracking and report encoding are independent DEC modes. RIS resets both;
+    // restoring tracking alone silently switches SGR TUIs to binary reports.
+    const mouseEncoding = (terminal as any)._core.coreMouseService.activeEncoding;
+    if (mouseEncoding === 'SGR') content += '\x1b[?1006h';
+    if (mouseEncoding === 'SGR_PIXELS') content += '\x1b[?1016h';
+
+    // Default: true
+`],
         ['class StringSerializeHandler extends BaseSerializeHandler {', String.raw`
 function openLink(terminal: Terminal, urlId: number): string {
   const link = (terminal as any)._core._oscLinkService.getLinkData(urlId);
@@ -40,7 +57,7 @@ class StringSerializeHandler extends BaseSerializeHandler {
     content += openLink(this._terminal, (this._terminal as any)._core._inputHandler._curAttrData.extended.urlId);`],
       ];
       for (const [before, after] of changes) {
-        if (contents.split(before).length !== 2) throw new Error('xterm serializer changed; review the OSC 8 snapshot patch.');
+        if (contents.split(before).length !== 2) throw new Error('xterm serializer changed; review the terminal snapshot patch.');
         contents = contents.replace(before, after);
       }
       return { contents, loader: 'ts', resolveDir: resolve('node_modules/@xterm/addon-serialize/src') };

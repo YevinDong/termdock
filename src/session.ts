@@ -2,8 +2,12 @@ import type { IPty } from 'node-pty';
 import { Terminal } from '@xterm/headless';
 import { SerializeAddon } from '@xterm/addon-serialize';
 import { AnsiTail } from './ansi';
+import { configureTerminal, resizeTerminal, type TerminalSize } from './terminal';
+import { captureSnapshotState } from './snapshot';
 export { AnsiTail } from './ansi';
 export interface SessionInfo { id: string; name: string; cwd: string; running: boolean; exitCode?: number; }
+type Output = { data: string; seq: number } | TerminalSize;
+const snapshotOptions: Parameters<SerializeAddon['serialize']>[0] & { fixedAlternateRows: boolean } = { fixedAlternateRows: true };
 export class Session {
   readonly mirror: Terminal;
   readonly serializer: SerializeAddon;
@@ -22,16 +26,19 @@ export class Session {
   private outputSeq = 0;
   private timer?: NodeJS.Timeout;
   private snapshotting = false;
-  private afterSnapshot: {data: string; seq: number}[] = [];
+  private afterSnapshot: Output[] = [];
+  private size: TerminalSize;
   private snapshotRequests: (() => void)[] = [];
   private subscriptions: {dispose(): void}[] = [];
   private exitSubscription?: {dispose(): void};
   private terminationTimer?: NodeJS.Timeout;
   constructor(readonly id: string, readonly name: string, readonly cwd: string, readonly pty: IPty, scrollback: number,
     private readonly send: (message: unknown) => void, private readonly changed: () => void) {
-    this.mirror = new Terminal({ cols: pty.cols, rows: pty.rows, scrollback, allowProposedApi: true });
+    this.size = { cols: pty.cols, rows: pty.rows };
+    this.mirror = new Terminal({ ...this.size, scrollback, allowProposedApi: true });
+    configureTerminal(this.mirror);
     this.serializer = new SerializeAddon(); this.mirror.loadAddon(this.serializer);
-    this.subscriptions.push(this.mirror.onData(data=>{if(!this.connected && this.running) this.pty.write(data);}));
+    this.subscriptions.push(this.mirror.onData(data => this.write(data)));
     this.subscriptions.push(pty.onData(data => this.receive(data)));
     this.exitSubscription = pty.onExit(e => {
       if (this.terminationTimer) clearTimeout(this.terminationTimer);
@@ -54,9 +61,20 @@ export class Session {
       this.pending -= data.length;
       this.updateFlow();
     });
+    this.forward({ data, seq: this.seq });
+  }
+  private forward(packet: Output) {
     if (!this.connected) return;
-    if (this.snapshotting) this.afterSnapshot.push({ data, seq: this.seq });
-    else { this.outputQueue += data; this.outputSeq = this.seq; this.scheduleFlush(); }
+    if (this.snapshotting) {
+      this.afterSnapshot.push(packet);
+    } else if ('data' in packet) {
+      this.outputQueue += packet.data;
+      this.outputSeq = packet.seq;
+      this.scheduleFlush();
+    } else {
+      this.flush();
+      this.send({ type: 'resize', id: this.id, ...packet });
+    }
   }
   private scheduleFlush() { if (!this.timer) this.timer = setTimeout(() => { this.timer = undefined; this.flush(); }, 16); }
   private flush() {
@@ -79,11 +97,12 @@ export class Session {
         else for (const cb of this.snapshotRequests.splice(0)) cb();
         return;
       }
-      const data = this.serializer.serialize() + tail;
-      this.unacknowledged.clear();this.clientPending=0;this.track(seq,data.length);
-      this.send({ type: 'snapshot', id: this.id, data, seq, cols: this.mirror.cols, rows: this.mirror.rows });
+      const data = this.serializer.serialize(snapshotOptions) + tail;
+      const runtime = captureSnapshotState(this.mirror);
+      this.unacknowledged.clear();this.clientPending=0;this.track(seq,data.length + JSON.stringify(runtime).length);
+      this.send({ type: 'snapshot', id: this.id, data, seq, cols: this.mirror.cols, rows: this.mirror.rows, runtime });
       this.snapshotting = false;
-      for (const packet of this.afterSnapshot) { this.outputQueue += packet.data; this.outputSeq = packet.seq; }
+      for (const packet of this.afterSnapshot) this.forward(packet);
       this.afterSnapshot = []; this.flush();
       for (const cb of this.snapshotRequests.splice(0)) cb();
     });
@@ -105,9 +124,14 @@ export class Session {
     else if(this.paused && this.pending<32*1024 && this.clientPending<64*1024) {this.paused=false;this.pty.resume();}
   }
   write(data: string) { if (this.running && !this.disposed) this.pty.write(data); }
+  // xterm's legacy mouse reports contain byte coordinates, not UTF-8 text.
+  writeBinary(data: string) { if (this.running && !this.disposed) this.pty.write(Buffer.from(data, 'latin1')); }
   resize(cols: number, rows: number) {
-    if (this.disposed || (cols === this.mirror.cols && rows === this.mirror.rows)) return;
-    this.mirror.resize(cols, rows);
+    if (this.disposed || (cols === this.size.cols && rows === this.size.rows)) return;
+    const size = { cols, rows };
+    this.size = size;
+    this.mirror.write('', () => { if (!this.disposed) resizeTerminal(this.mirror, size); });
+    this.forward(size);
     if (this.running) this.pty.resize(cols, rows);
   }
   clear() { this.mirror.write('',()=>{if(!this.disposed) {this.mirror.clear();this.snapshot();}}); }

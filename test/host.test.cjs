@@ -26,6 +26,13 @@ test('VS Code host + real PTY: native controls, trust, session switch, clipboard
   trusted=true;await commands.get('termdock.new')();await delay(100);assert.equal(state.sessions.length,1);assert.equal(state.host,'ssh-remote');const first=state.active;
   assert.equal(view.description,'sh 1');assert.equal(contexts.get('termdock.activeRunning'),true);
   handler({type:'input',id:first,data:"printf 'HOST_%s\\n' OK\r"});await until(()=>messages.some(m=>m.type==='data'&&m.data.includes('HOST_OK')));
+  // Legacy mouse coordinates above 95 must reach the PTY as single bytes.
+  handler({type:'input',id:first,data:"stty -echo -icanon min 1 time 0; printf 'BINARY_%s' READY; dd bs=1 count=6 2>/dev/null | od -An -tx1; stty echo icanon\r"});
+  await until(()=>messages.some(m=>m.type==='data'&&m.data.includes('BINARY_READY')));
+  handler({type:'input',id:first,data:'\x1b[M \x80\xe0',binary:true});
+  await until(()=>messages.some(m=>m.type==='data'&&/1b 5b 4d 20 80 e0/.test(m.data)));
+  handler({type:'input',id:first,data:"stty -echo -icanon min 1 time 0; printf '\\033[1;1H\\033[6n\\033[?12$p'; dd bs=1 count=15 2>/dev/null | od -An -tx1; stty echo icanon\r"});
+  await until(()=>messages.some(m=>m.type==='data'&&/1b 5b 31 3b 31 52 1b 5b 3f 31 32 3b 31 24 79/.test(m.data)));
   await commands.get('termdock.new')();await delay(40);const second=state.active;assert.notEqual(first,second);assert.equal(view.description,'sh 2');
   pickAnswer=items=>items.find(item=>item.id===first);await commands.get('termdock.switch')();assert.equal(state.active,first);assert.equal(view.description,'sh 1');assert.equal(lastPicker.options.title,'Termdock: Switch Terminal');assert.match(lastPicker.items[0].detail,/Remote · ssh-remote · \/tmp/);
   pickAnswer=undefined;await commands.get('termdock.switch')();assert.equal(state.active,first,'cancel keeps active terminal');
